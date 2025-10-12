@@ -12,6 +12,7 @@ const { generateGeminiImage } = require('../utils/generateImage');
 const { getNextPrompt, removeCompletedPrompt } = require('../db/dbClient');
 const config = require('../config');
 const crypto = require('crypto');
+const { sendWhatsAppNotification } = require('../utils/whatsappNotifier');
 
 /**
  * Esegue il flusso completo di pubblicazione giornaliera
@@ -20,6 +21,7 @@ const crypto = require('crypto');
  */
 const executeDailyPost = async (imageOptions = {}) => {
     const startTime = Date.now();
+    let originalPrompt; // reso disponibile anche nel catch
     console.log('\n' + '='.repeat(70));
     console.log('🚀 AVVIO POST GIORNALIERO - PIPELINE COMPLETA');
     console.log('⏰ Timestamp:', new Date().toISOString());
@@ -30,6 +32,7 @@ const executeDailyPost = async (imageOptions = {}) => {
         console.log('🤖 FASE 1: Ottieni prompt da database');
         const dbPrompt = await getNextPrompt();
         const prompt = dbPrompt.prompt;
+        originalPrompt = prompt;
         const promptId = dbPrompt.id;
         console.log(`   Prompt originale: "${prompt}"`);
 
@@ -86,6 +89,18 @@ const executeDailyPost = async (imageOptions = {}) => {
 
         removeCompletedPrompt(promptId);
 
+        // Notifica WhatsApp (best-effort, non blocca il flusso in caso di errore)
+        try {
+            await sendWhatsAppNotification({
+                status: 'success',
+                imageUrl: publicImageUrl,
+                caption: refinedPrompt,
+                originalPrompt
+            });
+        } catch (e) {
+            console.warn('⚠️ Notifica WhatsApp fallita (success path):', e.message);
+        }
+
         return {
             success: true,
             timestamp: new Date().toISOString(),
@@ -107,6 +122,17 @@ const executeDailyPost = async (imageOptions = {}) => {
         console.error(`⏱️  Tempo di esecuzione: ${executionTime}s`);
         console.error('Errore:', error.message);
         console.error('='.repeat(70) + '\n');
+
+        // Notifica WhatsApp di errore (best-effort)
+        try {
+            await sendWhatsAppNotification({
+                status: 'error',
+                error: error.message,
+                originalPrompt
+            });
+        } catch (e) {
+            console.warn('⚠️ Notifica WhatsApp fallita (error path):', e.message);
+        }
 
         return {
             success: false,

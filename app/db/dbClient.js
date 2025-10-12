@@ -22,6 +22,35 @@ const getClient = async () => {
 };
 
 /**
+ * Recupera la configurazione WhatsApp dal database
+ * Legge il token dal record con token_type = WHATSAPP_TOKEN_TYPE
+ * @returns {Promise<{token: string, createdate: any} | null>}
+ */
+const getWhatsAppConfig = async () => {
+    try {
+        const sql = await getClient();
+        const result = await sql`SELECT token, create_date as createdate
+                                 FROM tokens
+                                 WHERE token_type = ${process.env.WHATSAPP_TOKEN_TYPE}
+                                 LIMIT 1`;
+
+        if (result.length === 0) {
+            console.warn('⚠️  Nessuna configurazione WhatsApp trovata nel DB');
+            return null;
+        }
+
+        const row = result[0];
+        return {
+            token: decryptToken(row.token),
+            createdate: row.createdate
+        };
+    } catch (error) {
+        console.error('❌ Errore recupero configurazione WhatsApp:', error);
+        throw error;
+    }
+};
+
+/**
  * Recupera la configurazione Instagram attiva dal database
  * @returns {Promise<Object>} - {decrypted accessToken, createdate }
  */
@@ -125,6 +154,7 @@ module.exports = {
     getInstagramConfig,
     updateInstagramToken,
     getNextPrompt,
-    removeCompletedPrompt
+    removeCompletedPrompt,
+    getWhatsAppConfig
 };
 
