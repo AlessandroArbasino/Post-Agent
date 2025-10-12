@@ -104,6 +104,27 @@ const updateInstagramToken = async (accessToken) => {
     }
 };
 
+const updateWhatsAppToken = async (accessToken) => {
+    try {
+        const encryptedToken = encryptToken(accessToken);
+        
+        const sql = await getClient();
+        await sql`UPDATE tokens
+                   SET token = ${encryptedToken},
+                       create_date = NOW()
+                   WHERE id = (
+                       SELECT id FROM tokens
+                       WHERE token_type = ${process.env.WHATSAPP_TOKEN_TYPE}
+                       LIMIT 1
+                   )`;
+        console.log('✅ Token WhatsApp aggiornato nel database');
+        return true;
+    } catch (error) {
+        console.error('❌ Errore aggiornamento token WhatsApp:', error);
+        throw error;
+    }
+};
+
 /**
  * Recupera il prossimo prompt dalla coda
  * @returns {Promise<Object|null>} - { id, prompt} o null se coda vuota
@@ -155,6 +176,7 @@ module.exports = {
     updateInstagramToken,
     getNextPrompt,
     removeCompletedPrompt,
-    getWhatsAppConfig
+    getWhatsAppConfig,
+    updateWhatsAppToken
 };
 
