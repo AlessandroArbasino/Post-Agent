@@ -1,44 +1,52 @@
-# 📱 Instagram Daily Post Lambda
+# 📱 Post Agent
 
-Sistema modulare per la pubblicazione automatica giornaliera su Instagram, strutturato come una Lambda function con funzioni separate in file diversi.
+## 🔗 Quick Links
 
-## 📁 Struttura del Progetto
+- Web App: https://build-the-feed-app.vercel.app/
+- Telegram Group: https://t.me/+wpyTw6ofnhMzMWI0
+- Instagram Page: https://www.instagram.com/buildthefeed/
+
+## 📚 Project overview
+
+The Post Agent automates content publishing for Instagram starting from a user prompt via a Web App. A daily Cron Job refines this prompt using an LLM to generate a high-quality visual idea. The system generates the image and caption, then saves the visual asset to Cloud Storage. It automatically publishes the final content to the linked Instagram account. Finally, a notification message containing the published post and useful details is dispatched via Telegram.
+
+## 📁 Project Structure
 
 ```
-lambda/
-├── config.js                      # Configurazione centralizzata
-├── scheduler.js                   # Loop principale con esecuzione giornaliera
-├── package.json                   # Dipendenze Node.js
+app/
 ├── handlers/
 │   └── postHandler.js            # Handler principale del flusso di pubblicazione
+├── db/
+│   └── dbClient.js               # Accesso a Neon/Postgres (token IG, coda prompt)
 ├── utils/
-│   ├── uploadToCloudinary.js     # Gestione upload immagini su Cloudinary
+│   ├── crypto.js                 # Cifratura/decifratura token (AES-256-GCM)
+│   ├── geminiClient.js           # Inizializzazione client Gemini
+│   ├── generateImageGradio.js    # Generazione immagini con @gradio/client (URL/URI)
+│   ├── instagramToken.js         # Gestione refresh long-lived token IG
 │   ├── publishToInstagram.js     # Pubblicazione su Instagram Graph API
-│   ├── refinePrompt.js           # Raffinamento prompt con Gemini AI
-│   └── generateImage.js          # Generazione immagini con ComfyUI
+│   ├── refinePrompt.js           # Raffinamento prompt e caption con Gemini AI
+│   ├── telegramNotifier.js       # Notifiche Telegram (successo/errore)
+│   └── uploadToCloudinary.js     # Upload immagini su Cloudinary (da URL o buffer)
 ├── examples/
-│   ├── testRefinePrompt.js       # Test raffinamento prompt
-│   └── testGenerateImage.js      # Test generazione immagini
-└── README.md                      # Questa documentazione
+│   └── testFullPipeline.js       # Esegue l'intera pipeline
+└── README.md                     # Questa documentazione
 ```
 
-## 🚀 Caratteristiche
+## 🚀 Features
 
-- ✅ **Architettura modulare**: ogni funzione in un file separato
-- ✅ **Loop continuo**: esecuzione automatica ogni 24 ore
-- ✅ **Upload automatico**: carica immagini su Cloudinary
-- ✅ **Pubblicazione Instagram**: usa l'API Graph di Meta
-- ✅ **Raffinamento AI**: migliora i prompt con Gemini
-- ✅ **Generazione immagini**: integrazione completa con ComfyUI
-- ✅ **Logging dettagliato**: traccia completa di ogni operazione
-- ✅ **Gestione errori**: retry automatico in caso di problemi
-- ✅ **Configurazione centralizzata**: tutte le impostazioni in un unico posto
+- ✅ **Modular architecture**: each function in a dedicated file
+- ✅ **Image generation (Gradio)**: uses `@gradio/client` (e.g., `black-forest-labs/FLUX.1-dev`)
+- ✅ **Cloudinary upload**: supports URL or Buffer/data URL
+- ✅ **Instagram publishing**: via Graph API
+- ✅ **AI refinement**: improves prompts with Gemini
+- ✅ **Telegram notifications**: pipeline success/error with `.env` templates
+- ✅ **Detailed logging** and best-effort error handling
 
-## ⚙️ Configurazione
+## ⚙️ Setup
 
-### 1. Variabili d'Ambiente
+### 1. Environment Variables
 
-Aggiungi queste variabili al file `backend/.env`:
+Add these variables to the `.env` file (project root):
 
 ```env
 # Cloudinary (per hosting immagini pubbliche)
@@ -47,63 +55,89 @@ CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 CLOUDINARY_FOLDER=instagram-lambda
 
-# Instagram Graph API
-INSTAGRAM_ACCESS_TOKEN=your_instagram_access_token
+# Instagram Graph API (token da DB o fallback via .env)
 IG_USER_ID=your_instagram_business_account_id
-IG_GRAPH_VERSION=v21.0
+INSTAGRAM_GRAPH_VERSION=v21.0
+# Fallback opzionale se non usi il DB
+INSTAGRAM_ACCESS_TOKEN=your_long_lived_access_token
+
+# Database (Neon/Postgres) per token IG e coda prompt
+DATABASE_URL=postgres://user:pass@host/db
+INSTAGRAM_TOKEN_TYPE=instagram_long_lived
+
+# Cifratura token IG nel DB
+TOKENS_CRYPTO_KEY=base64_or_hex_32_bytes_key
 
 # Google AI (Gemini)
 GOOGLE_API_KEY=your_google_api_key
+DEFAULT_MODEL=gemini-2.0-flash
 
-# ComfyUI (opzionale, per generazione immagini)
-COMFYUI_BASE_URL=http://127.0.0.1:8188
-COMFYUI_CKPT_NAME=sd_xl_base_1.0.safetensors
+# Istruzioni prompt (Gemini)
+PROMPT_REFINE_INSTRUCTION=Rendi più descrittivo il seguente prompt per generazione di immagini:
+PROMPT_DEFAULT_INSTRUCTION=Genera un prompt creativo per una scena visiva accattivante
+PROMPT_CAPTION_INSTRUCTION=Scrivi una caption breve e coinvolgente per Instagram basata su: {prompt}. Includi fino a {N} hashtag pertinenti e non ripetitivi.
 
-# Configurazione Post Giornaliero
+# Gradio (generazione immagini)
+GRADIO_SPACE_ID=black-forest-labs/FLUX.1-dev
+HUGGING_FACE_TOKEN=
+
+# Parametri default immagine
+GENERATED_IMAGE_WIDTH=768
+GENERATED_IMAGE_HEIGHT=768
+GENERATED_IMAGE_STEPS=28
+GENERATED_IMAGE_CFG=4
+
+# Telegram (notifiche)
+TELEGRAM_BOT_TOKEN=123456789:ABC...
+TELEGRAM_CHAT_ID=123456789
+TELEGRAM_PARSE_MODE=
+TELEGRAM_SUCCESS_TEMPLATE=Pipeline OK\nOriginal: {0}\nRefined: {1}\nCaption: {2}
+TELEGRAM_FAILURE_TEMPLATE=Pipeline KO\nOriginal: {0}\nRefined: {1}\nError: {2}
+
+# Configurazione Post Giornaliero (facoltativo)
 DAILY_POST_PROMPT=a beautiful futuristic cityscape at sunset with flying cars and neon lights
 DAILY_POST_CAPTION=✨ Daily AI Art ✨\n\n#AI #Art #GenerativeAI #DailyPost
 ```
 
-### 2. Come ottenere le credenziali
+> Nota: se `DATABASE_URL` non è impostata, l'app funziona comunque. In tal caso il token Instagram viene letto da `INSTAGRAM_ACCESS_TOKEN` e le operazioni su DB vengono saltate.
+
+### 2. How to obtain credentials
 
 #### **Cloudinary**
-1. Registrati su [cloudinary.com](https://cloudinary.com)
-2. Vai su Dashboard
-3. Copia `Cloud Name`, `API Key` e `API Secret`
+1. Sign up at [cloudinary.com](https://cloudinary.com)
+2. Go to Dashboard
+3. Copy `Cloud Name`, `API Key`, and `API Secret`
 
-#### **Instagram Access Token**
-1. Crea una Facebook App su [developers.facebook.com](https://developers.facebook.com)
-2. Collega un account Instagram Business
-3. Genera un Access Token a lunga durata
-4. Ottieni l'`IG_USER_ID` dal Graph API Explorer
+#### **Instagram Access Token (managed via DB o via `.env`)**
+1. Create a Facebook App at [developers.facebook.com](https://developers.facebook.com)
+2. Link an Instagram Business account
+3. Generate a long-lived Access Token
+4. Save the token in DB table `tokens` with `token_type = INSTAGRAM_TOKEN_TYPE`
+5. Get `IG_USER_ID` from Graph API Explorer
+6. In alternativa, puoi impostare direttamente `INSTAGRAM_ACCESS_TOKEN` nel file `.env` e non usare il DB (funziona anche senza `DATABASE_URL`).
 
-## 📦 Installazione
+## 📦 Installation
 
 ```bash
-# Entra nella cartella lambda
-cd backend/lambda
-
 # Installa le dipendenze
 npm install
 ```
 
-## 🎯 Utilizzo
+## 🎯 Usage
 
-### Avvio dello Scheduler
+### Run pipeline (example)
 
 ```bash
-# Avvia il loop continuo (pubblica ogni 24 ore)
-npm start
+node app/examples/testFullPipeline.js
 ```
 
-Lo scheduler esegue la **pipeline completa**:
-1. ✅ Valida la configurazione all'avvio
-2. 🤖 **Raffina il prompt** con Gemini AI
-3. 🎨 **Genera l'immagine** con ComfyUI usando il prompt raffinato
-4. 📤 **Carica su Cloudinary** per ottenere un URL pubblico stabile
-5. 📱 **Pubblica su Instagram** con la didascalia configurata
-6. ⏰ Attende 24 ore
-7. 🔄 Ripete il processo in loop infinito
+The pipeline:
+1. 🤖 Refine prompt (Gemini, optional)
+2. 🎨 Generate image with Gradio
+3. 📤 Upload to Cloudinary (public URL)
+4. ✍️ Generate Instagram caption (Gemini, with hashtags)
+5. 📱 Publish to Instagram
+6. 📣 Send Telegram notification
 
 ### Output Esempio
 
@@ -132,9 +166,9 @@ Lo scheduler esegue la **pipeline completa**:
    Prompt originale: "a beautiful futuristic cityscape at sunset"
    ✅ Prompt raffinato: "A breathtaking futuristic metropolis at golden hour, towering..."
 
-🎨 FASE 2: Generazione immagine con ComfyUI
-   ✅ Immagine generata: http://127.0.0.1:8188/view?filename=...
-   ⏱️  Tempo generazione: 45.32s
+🎨 FASE 2: Generazione immagine con Gradio
+   ✅ Buffer generato: 1,234,567 bytes
+   ⏱️  Tempo generazione: 12.34s
 
 📤 FASE 3: Upload su Cloudinary
    ✅ Immagine caricata: https://res.cloudinary.com/...
@@ -153,115 +187,150 @@ Lo scheduler esegue la **pipeline completa**:
 ======================================================================
 
 ------------------------------------------------------------
-⏰ Prossimo post programmato per: martedì 1 ottobre 2025, 15:36:31
-   (tra 24 ore)
+🔔 Next run handled by Vercel Cron
+   (configured on a daily interval)
 ------------------------------------------------------------
-
-😴 Scheduler in pausa...
 ```
 
-## 🔧 Funzioni Disponibili
-
-### `config.js`
-Configurazione centralizzata con validazione automatica.
-
-### `scheduler.js`
-Loop principale che gestisce l'esecuzione temporizzata.
-
-**Metodi:**
-- `startScheduler()` - Avvia il loop infinito
+## 🔧 Available Functions
 
 ### `handlers/postHandler.js`
-Coordina il flusso completo di pubblicazione con pipeline AI-driven.
+Coordinates the full AI-driven publishing flow, using the IG token from DB.
 
 **Metodi:**
-- `executeDailyPost(prompt, caption, imageOptions)` - Pipeline completa:
-  1. Raffina prompt con Gemini
-  2. Genera immagine con ComfyUI
-  3. Upload su Cloudinary
-  4. Pubblicazione su Instagram
+- `executeDailyPost(imageOptions)` - Full pipeline:
+  1. Fetch prompt from DB queue (fallback to default via Gemini)
+  2. Refine prompt with Gemini
+  3. Generate image with Gradio (returns `sourceUrl` and `sourceUri`)
+  4. Upload to Cloudinary from `sourceUri` (data URL) or `sourceUrl`
+  5. Publish on Instagram (token from DB, auto-refresh if needed)
 
 ### `utils/uploadToCloudinary.js`
-Gestisce l'upload delle immagini su Cloudinary.
+Handles image uploads to Cloudinary.
 
 **Metodi:**
-- `uploadToCloudinary(imageUrl, options)` - Carica da URL
-- `uploadBufferToCloudinary(buffer, options)` - Carica da Buffer
+- `uploadToCloudinary(imageUrl, options)` - Upload from URL or data URL (data:image/...;base64,...)
+- `uploadBufferToCloudinary(buffer, options)` - Upload from Buffer
 
 ### `utils/publishToInstagram.js`
-Pubblica su Instagram tramite Graph API.
+Publishes to Instagram via Graph API, using token from DB with managed refresh.
 
 **Metodi:**
-- `publishToInstagram(imageUrl, caption)` - Crea container e pubblica
+- `publishToInstagram(imageUrl, caption)` - Creates media, publishes, and also returns `permalink`
 
 ### `utils/refinePrompt.js`
-Raffina i prompt utilizzando Google Gemini AI.
+Refines prompts and generates captions using Google Gemini AI.
 
 **Metodi:**
-- `refinePrompt(prompt, model)` - Migliora un prompt con Gemini
-- `initializeGeminiClient()` - Inizializza il client Gemini
+- `refinePrompt(prompt, model)` → `{ success, original, refined, model }`
+- `generateInstagramCaption(refinedPrompt, { maxHashtags, model })` → `{ success, caption, model }`
+- `getPromptFromDefault({ model })` → `{ success, prompt, model }`
+- `initializeGeminiClient()` - Initializes the Gemini client
 
-### `utils/generateImage.js`
-Genera immagini con ComfyUI tramite raffinamento AI.
+### Instagram Caption (Gemini)
+Generate a caption from a refined prompt with up to N hashtags and `{prompt}` placeholder:
+
+- Funzione: `generateInstagramCaption(refinedPrompt, { maxHashtags = 5, model = 'gemini-2.0-flash' })`
+- Restituisce: `{ success, caption, model }`
+- Uses ENV `PROMPT_CAPTION_INSTRUCTION` with `{N}` and `{prompt}` placeholders
+- Used in `handlers/postHandler.js` to create the caption before publishing.
+
+Esempio d'uso:
+
+```js
+const { refinePrompt, generateInstagramCaption, getPromptFromDefault } = require('../utils/refinePrompt');
+
+// 1) Get prompt (fallback to Gemini default)
+const dbPrompt = null; // e.g., fetch from DB
+const originalPrompt = dbPrompt?.prompt || (await getPromptFromDefault({ model: process.env.DEFAULT_MODEL })).prompt;
+
+// 2) Refine
+const r = await refinePrompt(originalPrompt, process.env.DEFAULT_MODEL);
+if (!r.success) throw new Error(r.error);
+
+// 3) Caption
+const cap = await generateInstagramCaption(r.refined, {
+  maxHashtags: parseInt(process.env.CAPTION_MAX_HASHTAGS || '5', 10),
+  model: process.env.DEFAULT_MODEL || 'gemini-2.0-flash',
+});
+
+const caption = cap.success ? cap.caption : r.refined; // fallback
+```
+
+Related `.env` variables:
+
+```env
+# Modello di default per refine/caption
+DEFAULT_MODEL=gemini-2.0-flash
+
+# Numero massimo di hashtag nella caption
+CAPTION_MAX_HASHTAGS=5
+
+# Istruzione opzionale per guidare lo stile della caption
+# Usa {N} e {prompt} come placeholder
+PROMPT_CAPTION_INSTRUCTION=Scrivi una caption breve e coinvolgente per Instagram basata su: {prompt}. Includi fino a {N} hashtag pertinenti e non ripetitivi.
+```
+
+### `utils/generateImageGradio.js`
+Generates images via `@gradio/client` and returns the source URL and a data URI usable for direct upload.
 
 **Metodi:**
-- `generateImage(prompt, options)` - Pipeline completa: refine + genera
-- `createComfyUIGraph(prompt, options)` - Crea grafo ComfyUI
-- `validateCheckpoint(baseUrl, ckptName)` - Valida checkpoint disponibili
-- `pollComfyUIHistory(baseUrl, promptId, timeout)` - Attende generazione
+- `generateImageGradio(prompt, options)` → `{ success, sourceUrl, sourceUri, executionTime, settings }`
+
+Notes:
+- `sourceUrl` is the URL returned by the Gradio Space (if available)
+- `sourceUri` is a data URL (data:image/...;base64,...) ready for `uploadToCloudinary`
 
 ## 🐛 Troubleshooting
 
-### Lo scheduler non si avvia
-- Verifica che tutte le variabili d'ambiente siano configurate
-- Controlla il file `.env` nel parent directory `backend/`
+### Vercel Cron job does not run
+- Ensure all env variables are configured
+- Check Cron configuration on Vercel (Dashboard → Settings → Cron Jobs)
+- Check logs of the API endpoint invoked by the Cron (Vercel Logs)
+### Cloudinary upload error
+- Verify Cloudinary credentials
+- Ensure the image URL is reachable
 
-### Errore upload Cloudinary
-- Verifica le credenziali Cloudinary
-- Assicurati che l'URL dell'immagine sia accessibile
+### Instagram publishing error
+- Verify the token exists in DB and is decryptable (correct `TOKENS_CRYPTO_KEY`)
+- Ensure the URL or data URL is acceptable by Cloudinary and publicly accessible to Instagram
+- Ensure you have an Instagram Business Account and `IG_USER_ID` set
 
-### Errore pubblicazione Instagram
-- Verifica che l'Access Token sia valido e non scaduto
-- Controlla che l'URL dell'immagine sia pubblicamente accessibile
-- Assicurati di avere un Instagram Business Account
+### Prompt refinement error (Gemini)
+- Verify `GOOGLE_API_KEY` is properly configured
+- Check Gemini API usage limits
 
-### Errore raffinamento prompt (Gemini)
-- Verifica che GOOGLE_API_KEY sia configurata correttamente
-- Controlla i limiti di utilizzo dell'API Gemini
+### Image generation error (Gradio)
+- Verify `GRADIO_SPACE_ID` is reachable
+- Check parameters like `width`, `height`, `num_inference_steps`, `guidance_scale`
 
-### Errore generazione immagine (ComfyUI)
-- Assicurati che ComfyUI sia in esecuzione su http://127.0.0.1:8188
-- Verifica che almeno un checkpoint sia presente in ComfyUI/models/checkpoints
-- Controlla i log di ComfyUI per errori specifici
+## 📝 Notes
 
-## 📝 Note
+- Image generation depends on the selected Gradio Space
+- Instagram may take a few seconds to process the image
 
-- Il primo post viene pubblicato **immediatamente** all'avvio
-- **ComfyUI deve essere in esecuzione** su http://127.0.0.1:8188 prima di avviare lo scheduler
-- Almeno un checkpoint deve essere presente in `ComfyUI/models/checkpoints`
-- La generazione dell'immagine richiede circa 30-60 secondi (dipende dalla GPU)
-- Instagram richiede circa 5 secondi per processare l'immagine
-- Il loop continua finché il processo non viene terminato manualmente (Ctrl+C)
-- Ogni esecuzione completa richiede circa 60-90 secondi totali
+<!-- Se reintrodurrai uno scheduler, documentalo qui. -->
 
-## 🔄 Modifica dell'Intervallo
+## ▶️ Running on Vercel (Cron)
 
-Per cambiare l'intervallo di pubblicazione, modifica in `config.js`:
+- **Hosting**: periodic execution is handled by **Vercel Cron**.
+- **Endpoint**: configure an API endpoint (e.g., `/api/cron`) that calls `executeDailyPost()`.
+- **Scheduling**: set frequency in the Vercel Dashboard.
 
-```javascript
-scheduler: {
-    // Esempio: ogni 12 ore
-    interval: 12 * 60 * 60 * 1000,
-    // ...
+Example `vercel.json` configuration (indicative):
+
+```json
+{
+  "crons": [
+    { "path": "/api/cron", "schedule": "0 8 * * *" }
+  ]
 }
 ```
 
-## 🛑 Terminazione
+Manual test:
+- Local: call `http://localhost:3000/api/cron`
+- Hosted: perform a GET request to `https://<your-project>.vercel.app/api/cron`
 
-Per fermare lo scheduler:
-- Premi `Ctrl+C` nel terminale
-- Lo scheduler gestisce gracefully i segnali SIGINT e SIGTERM
-
-## 📄 Licenza
+## 📄 License
 
 MIT

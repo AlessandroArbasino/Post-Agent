@@ -1,82 +1,71 @@
 /**
- * Upload di immagini a Cloudinary
- * Gestisce il caricamento da URL e restituisce l'URL pubblico
+ * Image upload to Cloudinary
+ * Handles uploading from URL and returns the public URL
  */
 
-const fetch = require('node-fetch');
 const cloudinary = require('cloudinary').v2;
-const config = require('../config');
 
-// Configurazione Cloudinary
+// Cloudinary configuration
 cloudinary.config({
-    cloud_name: config.cloudinary.cloudName,
-    api_key: config.cloudinary.apiKey,
-    api_secret: config.cloudinary.apiSecret,
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
     secure: true
 });
 
 /**
- * Carica un'immagine da Buffer a Cloudinary
- * @param {Buffer} buffer - Buffer dell'immagine
- * @param {Object} options - Opzioni di upload (folder, publicId)
- * @returns {Promise<Object>} - Oggetto con i dettagli dell'upload
+ * Upload an image Buffer to Cloudinary
+ * @param {Buffer} buffer - Image buffer
+ * @param {Object} options - Upload options (folder, publicId)
+ * @returns {Promise<Object>} - Object with upload details
  */
 const uploadBufferToCloudinary = (buffer, options = {}) => {
+
     return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-            {
-                resource_type: 'image',
-                folder: options.folder || process.env.CLOUDINARY_FOLDER || undefined,
-                public_id: options.publicId || undefined,
-                overwrite: true
-            },
+            options,
             (error, result) => {
                 if (error) {
-                    console.error('❌ Errore upload Cloudinary:', error);
+                    console.error('❌ Cloudinary upload error:', error);
                     return reject(error);
                 }
-                console.log('✅ Upload Cloudinary completato:', result.secure_url);
+                console.log('✅ Cloudinary upload completed:', result.secure_url);
                 resolve(result);
             }
         );
-        stream.end(buffer);
+        // Capture low-level stream errors
+        stream.on && stream.on('error', (err) => {
+            console.error('❌ Cloudinary stream error:', err);
+        });
+        try {
+            stream.end(buffer);
+        } catch (endErr) {
+            console.error('❌ Error during stream.end(buffer):', endErr);
+            reject(endErr);
+        }
     });
 };
 
 /**
- * Scarica un'immagine da URL e la carica su Cloudinary
- * @param {string} imageUrl - URL dell'immagine da caricare
- * @param {Object} options - Opzioni di upload
- * @returns {Promise<string>} - URL pubblico dell'immagine caricata
+ * Upload an image to Cloudinary directly from URL (without buffering in memory)
+ * @param {string} imageUrl - Image URL to upload
+ * @param {Object} options - Upload options (folder, publicId)
+ * @returns {Promise<{success:boolean, publicUrl?:string, cloudinaryData?:any, error?:string}>}
  */
 const uploadToCloudinary = async (imageUrl, options = {}) => {
     try {
-        console.log(`📤 Download immagine da: ${imageUrl}`);
-        
-        // Scarica l'immagine
-        const response = await fetch(imageUrl);
-        if (!response.ok) {
-            throw new Error(`Errore download immagine: ${response.status} ${response.statusText}`);
-        }
-        
-        const buffer = await response.buffer();
-        console.log(`📦 Immagine scaricata, dimensione: ${buffer.length} bytes`);
-        
-        // Upload a Cloudinary
-        const uploadResult = await uploadBufferToCloudinary(buffer, options);
-        
-        return {
-            success: true,
-            publicUrl: uploadResult.secure_url,
-            cloudinaryData: uploadResult
-        };
-        
+        const result = await cloudinary.uploader.upload(imageUrl, {
+            resource_type: 'image',
+            folder: options.folder || process.env.CLOUDINARY_FOLDER || undefined,
+            public_id: options.publicId || undefined,
+            overwrite: true,
+        });
+
+        console.log('✅ Cloudinary upload completed:', result.secure_url);
+        return { success: true, publicUrl: result.secure_url, cloudinaryData: result };
     } catch (error) {
-        console.error('❌ Errore uploadToCloudinary:', error);
-        return {
-            success: false,
-            error: error.message
-        };
+        console.error('❌ uploadToCloudinary error:', error);
+        return { success: false, error: error.message };
     }
 };
 

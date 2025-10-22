@@ -9,7 +9,7 @@ const crypto = require("crypto");
 function getKey() {
   const raw = process.env.TOKENS_CRYPTO_KEY;
   if (!raw) {
-    throw new Error("TOKENS_CRYPTO_KEY non configurata. Imposta una chiave a 32 byte (base64 o hex)");
+    throw new Error("TOKENS_CRYPTO_KEY not configured. Provide a 32-byte key (base64 or hex)");
   }
 
   // Try base64 first
@@ -32,7 +32,7 @@ function getKey() {
 // Returns string in the form base64(iv).base64(ciphertext).base64(tag)
 function encryptToken(plaintext) {
   if (typeof plaintext !== "string") {
-    throw new Error("encryptToken richiede una stringa");
+    throw new Error("encryptToken requires a string");
   }
   const key = getKey();
   const iv = crypto.randomBytes(12); // 96-bit nonce for GCM
@@ -45,7 +45,7 @@ function encryptToken(plaintext) {
 function decryptToken(pack) {
   
   if (typeof pack !== "string" || pack.split(".").length !== 3) {
-    throw new Error("Formato token cifrato non valido");
+    throw new Error("Invalid encrypted token format");
   }
   const [ivB64, dataB64, tagB64] = pack.split(".");
   const key = getKey();

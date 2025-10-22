@@ -1,8 +1,8 @@
 
 const { decryptToken, encryptToken } = require('../utils/crypto');
 /**
- * Client PostgreSQL per Neon Database via Vercel Postgres
- * Gestisce connessione e query al database
+ * PostgreSQL client for Neon Database via Vercel Postgres
+ * Manages connection and database queries
  */
 
 // Neon serverless client (ESM) via dynamic import for CommonJS compatibility
@@ -13,7 +13,7 @@ const getClient = async () => {
             const { neon } = await import('@neondatabase/serverless');
             const connectionString = process.env.DATABASE_URL;
             if (!connectionString) {
-                throw new Error('DATABASE_URL non configurato');
+                throw new Error('DATABASE_URL not configured');
             }
             return neon(connectionString);
         })();
@@ -22,8 +22,8 @@ const getClient = async () => {
 };
 
 /**
- * Recupera la configurazione Instagram attiva dal database
- * @returns {Promise<Object>} - {decrypted accessToken, createdate }
+ * Retrieve the active Instagram configuration from the database
+ * @returns {Promise<Object>} - { token, createdate }
  */
 const getInstagramConfig = async () => {
     try {
@@ -34,25 +34,25 @@ const getInstagramConfig = async () => {
                                  LIMIT 1`;
 
         if (result.length === 0) {
-            console.warn('⚠️  Nessuna configurazione Instagram trovata nel DB');
+            console.warn('⚠️  No Instagram configuration found in DB');
             return null;
         }
 
         const row = result[0];
         return {
             token: decryptToken(row.token),
-            createdate: row.createdate
+            createdate: row.create_date
         };
     } catch (error) {
-        console.error('❌ Errore recupero configurazione Instagram:', error);
+        console.error('❌ Error retrieving Instagram configuration:', error);
         throw error;
     }
 };
 
 /**
- * Aggiorna il token Instagram nel database
- * @param {string} accessToken - Nuovo access token
- * @returns {Promise<boolean>} - true se aggiornato e encrypted con successo
+ * Update the Instagram token in the database
+ * @param {string} accessToken - New access token
+ * @returns {Promise<boolean>} - true if updated and encrypted successfully
  */
 const updateInstagramToken = async (accessToken) => {
     try {
@@ -67,17 +67,17 @@ const updateInstagramToken = async (accessToken) => {
                        WHERE token_type = ${process.env.INSTAGRAM_TOKEN_TYPE}
                        LIMIT 1
                    )`;
-        console.log('✅ Token Instagram aggiornato nel database');
+        console.log('✅ Instagram token updated in database');
         return true;
     } catch (error) {
-        console.error('❌ Errore aggiornamento token Instagram:', error);
+        console.error('❌ Error updating Instagram token:', error);
         throw error;
     }
 };
 
 /**
- * Recupera il prossimo prompt dalla coda
- * @returns {Promise<Object|null>} - { id, prompt} o null se coda vuota
+ * Retrieve the next prompt from the queue
+ * @returns {Promise<Object|null>} - { id, prompt } or null if the queue is empty
  */
 const getNextPrompt = async () => {
     try {
@@ -88,7 +88,7 @@ const getNextPrompt = async () => {
                                  LIMIT 1`;
 
         if (result.length === 0) {
-            console.log('ℹ️  Coda prompt vuota');
+            console.log('ℹ️  Prompt queue is empty');
             return null;
         }
 
@@ -99,24 +99,24 @@ const getNextPrompt = async () => {
             prompt: row.prompt,
         };
     } catch (error) {
-        console.error('❌ Errore recupero prompt:', error);
+        console.error('❌ Error fetching next prompt:', error);
         throw error;
     }
 };
 
 /**
- * Marca un prompt come completato
- * @param {number} promptId - ID del prompt
+ * Mark a prompt as completed
+ * @param {number} promptId - Prompt ID
  * @returns {Promise<boolean>}
  */
 const removeCompletedPrompt = async (promptId) => {
     try {
         const sql = await getClient();
         await sql`DELETE FROM prompt_queue WHERE id = ${promptId}`;
-        console.log(`🗑️ Prompt ${promptId} eliminato dopo completamento`);
+        console.log(`🗑️ Prompt ${promptId} deleted after completion`);
         return true;
     } catch (error) {
-        console.error('❌ Errore marcatura prompt completato:', error);
+        console.error('❌ Error deleting completed prompt:', error);
         throw error;
     }
 };

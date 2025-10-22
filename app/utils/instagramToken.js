@@ -3,7 +3,6 @@
  */
 
 const fetch = require('node-fetch');
-const config = require('../config');
 const { updateInstagramToken } = require('../db/dbClient');
 
 /**
@@ -19,12 +18,12 @@ const { updateInstagramToken } = require('../db/dbClient');
  * @returns {Promise<{success: boolean, access_token?: string, token_type?: string, expires_in?: number, error?: string}>}
  */
 async function exchangeShortLivedToken(shortLivedToken) {
-  const appId = process.env.INSTAGRAM_APP_ID || config.instagram.appId;
-  const appSecret = process.env.INSTAGRAM_APP_SECRET || config.instagram.appSecret;
+  const appId = process.env.INSTAGRAM_APP_ID;
+  const appSecret = process.env.INSTAGRAM_APP_SECRET;
   const graphVersion = (process.env.IG_GRAPH_VERSION || 'v21.0').replace(/^v/, 'v');
 
   if (!appId || !appSecret) {
-    return { success: false, error: 'INSTAGRAM_APP_ID o INSTAGRAM_APP_SECRET mancanti' };
+    return { success: false, error: 'INSTAGRAM_APP_ID or INSTAGRAM_APP_SECRET missing' };
   }
 
   try {
@@ -51,7 +50,7 @@ async function exchangeShortLivedToken(shortLivedToken) {
     text = await res.text();
 
     if (!res.ok) {
-      return { success: false, error: `Exchange fallito: ${text}` };
+      return { success: false, error: `Exchange failed: ${text}` };
     }
 
     const json = JSON.parse(text);
@@ -82,7 +81,7 @@ async function refreshLongLivedToken(longLivedToken) {
     const text = await res.text();
 
     if (!res.ok) {
-      return { success: false, error: `Refresh fallito: ${text}` };
+      return { success: false, error: `Refresh failed: ${text}` };
     }
 
     const json = JSON.parse(text);
@@ -95,14 +94,14 @@ async function refreshLongLivedToken(longLivedToken) {
 async function manageLongLiveToken(longLivedToken) {
     const refreshResult = await refreshLongLivedToken(longLivedToken);
     if (!refreshResult.success) {
-        throw new Error(`Refresh token fallito: ${refreshResult.error}`);
+        throw new Error(`Token refresh failed: ${refreshResult.error}`);
     }
 
     try {
       updateInstagramToken(refreshResult.access_token);
       return {success: true, ...refreshResult};
     } catch (error) {
-        console.error(`Errore durante l'aggiornamento del token Instagram: ${error.message}`);
+        console.error(`Error updating Instagram token: ${error.message}`);
     }
 }
 
