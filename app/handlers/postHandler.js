@@ -97,8 +97,8 @@ const executeDailyPost = async (imageOptions = {}) => {
         console.log(`🎨 Refined prompt: "${refineResult.refined.substring(0, 60)}..."`);
 
         // Do not remove the prompt if it was obtained from default
-        if (refineResult.id) {
-            removeCompletedPrompt(refineResult.id);
+        if (dbPrompt?.id) {
+            removeCompletedPrompt(dbPrompt.id);
         }
 
         // Telegram notification
