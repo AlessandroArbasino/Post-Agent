@@ -23,7 +23,7 @@ async function exchangeShortLivedToken(shortLivedToken) {
   const graphVersion = (process.env.IG_GRAPH_VERSION || 'v21.0').replace(/^v/, 'v');
 
   if (!appId || !appSecret) {
-    return { success: false, error: 'INSTAGRAM_APP_ID or INSTAGRAM_APP_SECRET missing' };
+    throw new Error('INSTAGRAM_APP_ID or INSTAGRAM_APP_SECRET missing');
   }
 
   try {
@@ -50,13 +50,13 @@ async function exchangeShortLivedToken(shortLivedToken) {
     text = await res.text();
 
     if (!res.ok) {
-      return { success: false, error: `Exchange failed: ${text}` };
+      throw new Error(`Exchange failed: ${text}`);
     }
 
     const json = JSON.parse(text);
     return { success: true, ...json };
   } catch (err) {
-    return { success: false, error: err.message };
+    throw new Error(err.message);
   }
 }
 
@@ -81,27 +81,25 @@ async function refreshLongLivedToken(longLivedToken) {
     const text = await res.text();
 
     if (!res.ok) {
-      return { success: false, error: `Refresh failed: ${text}` };
+      throw new Error(`Refresh failed: ${text}`);
     }
 
     const json = JSON.parse(text);
     return { success: true, ...json };
   } catch (err) {
-    return { success: false, error: err.message };
+    throw new Error(err.message);
   }
 }
 
 async function manageLongLiveToken(longLivedToken) {
     const refreshResult = await refreshLongLivedToken(longLivedToken);
-    if (!refreshResult.success) {
-        throw new Error(`Token refresh failed: ${refreshResult.error}`);
-    }
 
     try {
       updateInstagramToken(refreshResult.access_token);
       return {success: true, ...refreshResult};
     } catch (error) {
         console.error(`Error updating Instagram token: ${error.message}`);
+        throw error;
     }
 }
 

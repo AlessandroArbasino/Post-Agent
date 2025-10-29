@@ -147,13 +147,9 @@ async function generateImageGradio(prompt, options = {}) {
   } catch (error) {
     const executionTime = ((Date.now() - started) / 1000).toFixed(2);
     console.error('❌ generateImageGradio error:', error?.message || error);
-    return {
-      success: false,
-      buffer: null,
-      executionTime: `${executionTime}s`,
-      settings: options,
-      error: error?.message || String(error),
-    };
+    const err = new Error(error?.message || String(error));
+    err.meta = { executionTime: `${executionTime}s`, settings: options };
+    throw err;
   }
 }
 

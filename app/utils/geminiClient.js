@@ -27,8 +27,7 @@ const initializeGeminiClient = () => {
     console.log('✅ Gemini client initialized');
     return true;
   } catch (err) {
-    console.error('❌ Gemini initialization error:', err?.message || err);
-    return false;
+    throw new Error('❌ Gemini initialization error:', err?.message || err);
   }
 };
 

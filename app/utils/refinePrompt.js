@@ -21,10 +21,7 @@ const refinePrompt = async (prompt, model = 'gemini-2.0-flash') => {
     try {
         // Validazione input
         if (!prompt || !prompt.trim()) {
-            return {
-                success: false,
-                error: 'prompt is required'
-            };
+            throw new Error('prompt is required');
         }
 
         console.log('🤖 Refining prompt with Gemini...');
@@ -40,10 +37,7 @@ const refinePrompt = async (prompt, model = 'gemini-2.0-flash') => {
 
         // Output validation
         if (!refined) {
-            return {
-                success: false,
-                error: 'Empty response from Gemini'
-            };
+            throw new Error('Empty response from Gemini');
         }
 
         console.log('✅ Prompt refined successfully');
@@ -58,10 +52,7 @@ const refinePrompt = async (prompt, model = 'gemini-2.0-flash') => {
 
     } catch (error) {
         console.error('❌ refinePrompt error:', error);
-        return {
-            success: false,
-            error: error?.message || 'Error during Gemini call (refine)'
-        };
+        throw new Error(error?.message || 'Error during Gemini call (refine)');
     }
 };
 
@@ -73,7 +64,7 @@ const getPromptFromDefault = async ({ model = 'gemini-2.0-flash' } = {}) => {
         const response = (text || '').trim();
 
         if (!response) {
-            return { success: false, error: 'Empty response from Gemini (default prompt)' };
+            throw new Error('Empty response from Gemini (default prompt)');
         }
 
         console.log('✅ Response obtained from Gemini');
@@ -87,7 +78,7 @@ const getPromptFromDefault = async ({ model = 'gemini-2.0-flash' } = {}) => {
         };
     } catch (error) {
         console.error('❌ callGeminiWithDefaultPrompt error:', error);
-        return { success: false, error: error?.message || 'Error during Gemini call (default prompt)' };
+        throw new Error(error?.message || 'Error during Gemini call (default prompt)');
     }
 };
 
@@ -153,7 +144,7 @@ const generateInstagramCaption = async (refinedPrompt, { maxHashtags = 5, model 
         const caption = (captionRaw || '').trim();
 
         if (!caption) {
-            return { success: false, error: 'Empty response from Gemini (caption)' };
+            throw new Error('Empty response from Gemini (caption)');
         }
 
         console.log('✅ Caption generated successfully');

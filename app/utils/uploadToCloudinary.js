@@ -65,7 +65,7 @@ const uploadToCloudinary = async (imageUrl, options = {}) => {
         return { success: true, publicUrl: result.secure_url, cloudinaryData: result };
     } catch (error) {
         console.error('❌ uploadToCloudinary error:', error);
-        return { success: false, error: error.message };
+        throw new Error(error.message);
     }
 };
 

@@ -22,10 +22,12 @@ const executeDailyPost = async (imageOptions = {}) => {
     console.log('🚀 DAILY POST START - FULL PIPELINE');
     console.log('⏰ Timestamp:', new Date().toISOString());
     console.log('='.repeat(70) + '\n');
+    
+    let dbPrompt = null;
+    let refineResult = null;
 
     try {
         console.log('🤖 STEP 0: Get prompt from database');
-        let dbPrompt = null;
         
         if(process.env.DATABASE_URL) {
             dbPrompt = await getNextPrompt();
@@ -34,14 +36,11 @@ const executeDailyPost = async (imageOptions = {}) => {
         if (!dbPrompt) {
             dbPrompt = await getPromptFromDefault();
         }
+
         console.log(`   Original prompt: "${dbPrompt.prompt}"`);
 
         console.log('🤖 STEP 2: Prompt refinement with Gemini AI');
-        let refineResult = await refinePrompt(dbPrompt.prompt, imageOptions.model || process.env.DEFAULT_MODEL);
-        
-        if (!refineResult.success) {
-            throw new Error(`Prompt refinement failed: ${refineResult.error}`);
-        }
+        refineResult = await refinePrompt(dbPrompt.prompt, imageOptions.model || process.env.DEFAULT_MODEL);
         
         console.log(`   ✅ Refined prompt: "${refineResult.refined.substring(0, 80)}..."\n`);
 
@@ -55,10 +54,7 @@ const executeDailyPost = async (imageOptions = {}) => {
             seed: imageOptions.seed,
             randomize_seed: imageOptions.randomize_seed ?? true,
         });
-
-        if (!generateResult.success) {
-            throw new Error(`Image generation failed: ${generateResult.error}`);
-        }
+        
         console.log(`   ✅ Image generated (buffer ${generateResult.sourceUri?.length || 0} bytes)`);
         console.log(`   ⏱️  Generation time: ${generateResult.executionTime}\n`);
 
@@ -83,10 +79,6 @@ const executeDailyPost = async (imageOptions = {}) => {
         // Step 5: Publish to Instagram (function handles refresh+retry if needed)
         console.log('📱 STEP 6: Publish to Instagram');
         let instagramResult = await publishToInstagram(publicImageUrl, finalCaption.caption);
-
-        if (!instagramResult.success) {
-            throw new Error(`Publishing failed: ${instagramResult.error}`);
-        }
 
         let executionTime = ((Date.now() - startTime) / 1000).toFixed(2);
         
@@ -133,38 +125,22 @@ const executeDailyPost = async (imageOptions = {}) => {
 
     } catch (error) {
         let executionTime = ((Date.now() - startTime) / 1000).toFixed(2);
-        
         console.error('\n' + '='.repeat(70));
         console.error('❌ ERROR DURING PUBLISHING');
         console.error(`⏱️  Execution time: ${executionTime}s`);
         console.error('Error:', error.message);
-
+        // Attach context for centralized error middleware
         try {
-            const notifyErrRes = await sendTelegramNotification({
-                status: 'error',
-                imageUrl: null,
-                caption: null,
-                originalPrompt: refineResult.original,
-                refinedPrompt: refineResult.refined,
-                error: error.message,
-                permalink: null
-            });
-            if (!notifyErrRes?.success) {
-                console.warn('⚠️ Telegram notification failed (error path):', notifyErrRes?.error);
-            }
-        } catch (e) {
-            console.warn('⚠️ Telegram notification error (error path):', e.message);
-        }
-
-        return {
-            success: false,
-            timestamp: new Date().toISOString(),
-            executionTime: `${executionTime}s`,
-            error: error.message,
-            stack: error.stack
-        };
+            error.context = {
+                originalPrompt: dbPrompt.prompt || "Prompt not available",
+                refinedPrompt: refineResult.refined || "Refined Prompt not available",
+            };
+            console.log('context', error.context);
+        } catch (_) {}
+        // Rely on centralized error handler to notify and on route wrapper to respond
+        throw error;
     }
-};
+}
 
 module.exports = {
     executeDailyPost

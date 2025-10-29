@@ -43,7 +43,7 @@ const publishToInstagram = async (imageUrl, caption = '') => {
                 // Ricarica dal DB il token aggiornato
                 instagramConfig = await getInstagramConfig();
             } catch (e) {
-                return { success: false, mode: 'error', error: e.message };
+                throw new Error(e.message);
             }
         }
     }
@@ -52,7 +52,7 @@ const publishToInstagram = async (imageUrl, caption = '') => {
     let igUserId = process.env.IG_USER_ID;
 
     if (!token || !igUserId) {
-        return { success: false, mode: 'error', error: 'Token or IG_USER_ID not configured (DB or ENV)' };
+        throw new Error('Token or IG_USER_ID not configured (DB or ENV)');
     }
 
 
@@ -61,17 +61,13 @@ const publishToInstagram = async (imageUrl, caption = '') => {
         console.log(`   Image URL: ${imageUrl}`);
         console.log(`   Caption: ${caption.substring(0, 50)}...`);
 
-        try {
-            const { creationId, mediaId, permalink } = await managePublish(token, igUserId, graphVersion, imageUrl, caption);
-            console.log(`🎉 Post published successfully! Media ID: ${mediaId}`);
-            if (permalink) console.log(`🔗 Permalink: ${permalink}`);
-            return { success: true, mode: 'executed', creationId, mediaId, permalink, message: 'Instagram post published successfully' };
-        } catch (err) {
-            throw err;
-        }
+        const { creationId, mediaId, permalink } = await managePublish(token, igUserId, graphVersion, imageUrl, caption);
+        console.log(`🎉 Post published successfully! Media ID: ${mediaId}`);
+        if (permalink) console.log(`🔗 Permalink: ${permalink}`);
+        return { success: true, mode: 'executed', creationId, mediaId, permalink, message: 'Instagram post published successfully' };
     } catch (error) {
         console.error('❌ publishToInstagram error:', error);
-        return { success: false, mode: 'error', error: error.message };
+        throw new Error(error.message);
     }
 };
 

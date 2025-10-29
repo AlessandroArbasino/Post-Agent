@@ -1,16 +1,20 @@
 import { NextResponse } from 'next/server';
+import { withErrorReporting, installGlobalErrorHandlers } from '../../utils/errorMiddleware';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-export async function GET() {
+// Install global error handlers once per process
+installGlobalErrorHandlers();
+
+async function handler() {
   try {
     // Import compatible with CommonJS (postHandler uses module.exports)
     const mod = await import('../../handlers/postHandler');
     const executeDailyPost = mod.executeDailyPost || (mod.default && mod.default.executeDailyPost);
 
     if (typeof executeDailyPost !== 'function') {
-      return NextResponse.json({ success: false, error: 'executeDailyPost not available' }, { status: 500 });
+      throw new Error('executeDailyPost not available');
     }
 
     const imageOptions = {
@@ -32,9 +36,11 @@ export async function GET() {
       lastResult = await executeDailyPost(imageOptions);
     }
 
-    const status = lastResult?.success ? 200 : 500;
-    return NextResponse.json(lastResult ?? { success: status === 200 }, { status });
+    return NextResponse.json(lastResult ?? { success: true }, { status: 200 });
   } catch (err) {
-    return NextResponse.json({ success: false, error: err?.message || 'Unknown error' }, { status: 500 });
+    // Let withErrorReporting handle Telegram notification and response 500
+    throw err;
   }
 }
+
+export const GET = await withErrorReporting(handler, { operation: 'cron' });
