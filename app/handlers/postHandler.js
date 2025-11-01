@@ -60,8 +60,9 @@ const executeDailyPost = async (imageOptions = {}) => {
 
         // Step 3: Upload image to Cloudinary (for stable public URL) using direct URL
         console.log('📤 STEP 4: Upload to Cloudinary (from URL)');
+        const today = new Date().toISOString().slice(0, 10);
         let uploadRes = await uploadToCloudinary(generateResult.sourceUri, {
-
+            folder: `dailypost/${today}`,
         });
 
         let publicImageUrl = uploadRes?.publicUrl;
