@@ -121,10 +121,33 @@ const removeCompletedPrompt = async (promptId) => {
     }
 };
 
+/**
+ * Insert a new image record for voting
+ * @param {Object} params
+ * @param {string} params.instagramPostId
+ * @param {string} params.imageUrl
+ * @param {string} params.cloudinaryFolder
+ * @returns {Promise<{id:number}>}
+ */
+const insertVotingImage = async ({ instagramPostId, imageUrl, cloudinaryFolder }) => {
+    try {
+        const sql = await getClient();
+        const rows = await sql`INSERT INTO voting_images (instagram_post_id, image_url, cloudinary_folder, create_date)
+                               VALUES (${instagramPostId}, ${imageUrl}, ${cloudinaryFolder}, NOW())
+                               RETURNING id`;
+        const id = rows?.[0]?.id;
+        console.log('✅ voting_images insert id:', id);
+        return { id };
+    } catch (error) {
+        throw error;
+    }
+};
+
 module.exports = {
     getInstagramConfig,
     updateInstagramToken,
     getNextPrompt,
-    removeCompletedPrompt
+    removeCompletedPrompt,
+    insertVotingImage
 };
 

@@ -14,62 +14,24 @@ cloudinary.config({
 });
 
 /**
- * Upload an image Buffer to Cloudinary
- * @param {Buffer} buffer - Image buffer
- * @param {Object} options - Upload options (folder, publicId)
- * @returns {Promise<Object>} - Object with upload details
- */
-const uploadBufferToCloudinary = (buffer, options = {}) => {
-
-    return new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-            options,
-            (error, result) => {
-                if (error) {
-                    console.error('❌ Cloudinary upload error:', error);
-                    return reject(error);
-                }
-                console.log('✅ Cloudinary upload completed:', result.secure_url);
-                resolve(result);
-            }
-        );
-        // Capture low-level stream errors
-        stream.on && stream.on('error', (err) => {
-            console.error('❌ Cloudinary stream error:', err);
-        });
-        try {
-            stream.end(buffer);
-        } catch (endErr) {
-            console.error('❌ Error during stream.end(buffer):', endErr);
-            reject(endErr);
-        }
-    });
-};
-
-/**
  * Upload an image to Cloudinary directly from URL (without buffering in memory)
  * @param {string} imageUrl - Image URL to upload
  * @param {Object} options - Upload options (folder, publicId)
  * @returns {Promise<{success:boolean, publicUrl?:string, cloudinaryData?:any, error?:string}>}
  */
 const uploadToCloudinary = async (imageUrl, options = {}) => {
-    try {
-        const result = await cloudinary.uploader.upload(imageUrl, {
-            resource_type: 'image',
-            folder: options.folder || process.env.CLOUDINARY_FOLDER || undefined,
-            public_id: options.publicId || undefined,
-            overwrite: true,
-        });
+    const result = await cloudinary.uploader.upload(imageUrl, {
+        resource_type: 'image',
+        folder: options.folder || process.env.CLOUDINARY_FOLDER || undefined,
+        public_id: options.publicId || undefined,
+        overwrite: true,
+    });
 
-        console.log('✅ Cloudinary upload completed:', result.secure_url);
-        return { success: true, publicUrl: result.secure_url, cloudinaryData: result };
-    } catch (error) {
-        console.error('❌ uploadToCloudinary error:', error);
-        throw new Error(error.message);
-    }
+    console.log('✅ Cloudinary upload completed:', result.secure_url);
+    return { success: true, publicUrl: result.secure_url, cloudinaryData: result };
+
 };
 
 module.exports = {
-    uploadToCloudinary,
-    uploadBufferToCloudinary
+    uploadToCloudinary
 };

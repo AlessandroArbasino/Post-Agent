@@ -7,7 +7,7 @@ const { refinePrompt, generateInstagramCaption, getPromptFromDefault } = require
 const { generateImageGradio } = require('../utils/generateImageGradio');
 const { uploadToCloudinary } = require('../utils/uploadToCloudinary');
 const { publishToInstagram } = require('../utils/publishToInstagram');
-const { getNextPrompt, removeCompletedPrompt } = require('../db/dbClient');
+const { getNextPrompt, removeCompletedPrompt, insertVotingImage } = require('../db/dbClient');
 const { sendTelegramNotification } = require('../utils/telegramNotifier');
 
 /**
@@ -61,8 +61,9 @@ const executeDailyPost = async (imageOptions = {}) => {
         // Step 3: Upload image to Cloudinary (for stable public URL) using direct URL
         console.log('📤 STEP 4: Upload to Cloudinary (from URL)');
         const today = new Date().toISOString().slice(0, 10);
+        const cloudinaryFolder = `dailypost/${today}`;
         let uploadRes = await uploadToCloudinary(generateResult.sourceUri, {
-            folder: `dailypost/${today}`,
+            folder: cloudinaryFolder,
         });
 
         let publicImageUrl = uploadRes?.publicUrl;
@@ -92,6 +93,11 @@ const executeDailyPost = async (imageOptions = {}) => {
         // Do not remove the prompt if it was obtained from default
         if (dbPrompt?.id) {
             removeCompletedPrompt(dbPrompt.id);
+            await insertVotingImage({
+                instagramMediaId: instagramResult.mediaId,
+                cloudinaryUrl: publicImageUrl,
+                folder: cloudinaryFolder,
+            });
         }
 
         // Telegram notification

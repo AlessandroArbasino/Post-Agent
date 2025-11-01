@@ -22,13 +22,9 @@ const initializeGeminiClient = () => {
     console.warn('⚠️  GOOGLE_API_KEY not configured');
     return false;
   }
-  try {
-    geminiClient = new GoogleGenerativeAI(apiKey);
-    console.log('✅ Gemini client initialized');
-    return true;
-  } catch (err) {
-    throw new Error('❌ Gemini initialization error:', err?.message || err);
-  }
+  geminiClient = new GoogleGenerativeAI(apiKey);
+  console.log('✅ Gemini client initialized');
+  return true;
 };
 
 /**

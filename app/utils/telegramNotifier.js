@@ -88,7 +88,6 @@ async function sendTelegramPhoto({ token, chatId, photo, caption, parseMode }) {
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 async function sendTelegramNotification({ status, imageUrl, caption, originalPrompt, refinedPrompt, error, permalink }) {
-  try {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
     const parseMode = process.env.TELEGRAM_PARSE_MODE || undefined; // opzionale
@@ -121,9 +120,6 @@ async function sendTelegramNotification({ status, imageUrl, caption, originalPro
       await sendTelegramText({ token, chatId, text, parseMode });
       return { success: true };
     }
-  } catch (e) {
-    return { success: false, error: e.message };
-  }
 }
 
 module.exports = {

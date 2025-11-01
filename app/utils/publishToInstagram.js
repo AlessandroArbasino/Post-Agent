@@ -55,20 +55,14 @@ const publishToInstagram = async (imageUrl, caption = '') => {
         throw new Error('Token or IG_USER_ID not configured (DB or ENV)');
     }
 
+    console.log('📸 Starting publish to Instagram...');
+    console.log(`   Image URL: ${imageUrl}`);
+    console.log(`   Caption: ${caption.substring(0, 50)}...`);
 
-    try {
-        console.log('📸 Starting publish to Instagram...');
-        console.log(`   Image URL: ${imageUrl}`);
-        console.log(`   Caption: ${caption.substring(0, 50)}...`);
-
-        const { creationId, mediaId, permalink } = await managePublish(token, igUserId, graphVersion, imageUrl, caption);
+    const { creationId, mediaId, permalink } = await managePublish(token, igUserId, graphVersion, imageUrl, caption);
         console.log(`🎉 Post published successfully! Media ID: ${mediaId}`);
         if (permalink) console.log(`🔗 Permalink: ${permalink}`);
         return { success: true, mode: 'executed', creationId, mediaId, permalink, message: 'Instagram post published successfully' };
-    } catch (error) {
-        console.error('❌ publishToInstagram error:', error);
-        throw new Error(error.message);
-    }
 };
 
 async function managePublish(token, igUserId, graphVersion, imageUrl, caption) {

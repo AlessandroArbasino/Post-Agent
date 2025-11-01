@@ -125,36 +125,31 @@ async function geminiGenerateText({ instruction, model = 'gemini-2.0-flash' }) {
  * @returns {Promise<{success:boolean, caption?:string, model?:string, error?:string}>}
  */
 const generateInstagramCaption = async (refinedPrompt, { maxHashtags = 5, model = 'gemini-2.0-flash' } = {}) => {
-    try {
-        // Input validation
-        if (!refinedPrompt || !refinedPrompt.trim()) {
-            throw new Error('refinedPrompt is required');
-        }
-
-        console.log('📝 Generating Instagram caption with Gemini...');
-        console.log(`   Input (refined prompt): ${refinedPrompt.substring(0, 100)}...`);
-
-        // Instruction: use ENV if provided, otherwise sensible fallback
-        const baseInstruction = process.env.PROMPT_CAPTION_INSTRUCTION
-
-        const instruction = `${baseInstruction.replace('{N}', String(maxHashtags)).replace('{prompt}', refinedPrompt)}`;
-
-        // Unified call to Gemini
-        const captionRaw = await geminiGenerateText({ instruction, model });
-        const caption = (captionRaw || '').trim();
-
-        if (!caption) {
-            throw new Error('Empty response from Gemini (caption)');
-        }
-
-        console.log('✅ Caption generated successfully');
-        console.log(`   Output: ${caption.substring(0, 100)}...`);
-
-        return { success: true, caption, model };
-    } catch (error) {
-        console.error('❌ generateInstagramCaption error:', error);
-        throw new Error(error?.message || 'Error during Gemini call (caption)');
+    // Input validation
+    if (!refinedPrompt || !refinedPrompt.trim()) {
+        throw new Error('refinedPrompt is required');
     }
+
+    console.log('📝 Generating Instagram caption with Gemini...');
+    console.log(`   Input (refined prompt): ${refinedPrompt.substring(0, 100)}...`);
+
+    // Instruction: use ENV if provided, otherwise sensible fallback
+    const baseInstruction = process.env.PROMPT_CAPTION_INSTRUCTION
+
+    const instruction = `${baseInstruction.replace('{N}', String(maxHashtags)).replace('{prompt}', refinedPrompt)}`;
+
+    // Unified call to Gemini
+    const captionRaw = await geminiGenerateText({ instruction, model });
+    const caption = (captionRaw || '').trim();
+
+    if (!caption) {
+        throw new Error('Empty response from Gemini (caption)');
+    }
+
+    console.log('✅ Caption generated successfully');
+    console.log(`   Output: ${caption.substring(0, 100)}...`);
+
+    return { success: true, caption, model };
 };
 
 // Initialize the client on module load
