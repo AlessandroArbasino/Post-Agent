@@ -94,9 +94,9 @@ const executeDailyPost = async (imageOptions = {}) => {
         if (dbPrompt?.id) {
             removeCompletedPrompt(dbPrompt.id);
             await insertVotingImage({
-                instagramMediaId: instagramResult.mediaId,
-                cloudinaryUrl: publicImageUrl,
-                folder: cloudinaryFolder,
+                instagramPostId: instagramResult.mediaId,
+                imageUrl: publicImageUrl,
+                cloudinaryFolder: cloudinaryFolder,
             });
         }
 

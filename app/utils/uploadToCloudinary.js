@@ -29,7 +29,6 @@ const uploadToCloudinary = async (imageUrl, options = {}) => {
 
     console.log('✅ Cloudinary upload completed:', result.secure_url);
     return { success: true, publicUrl: result.secure_url, cloudinaryData: result };
-
 };
 
 module.exports = {
