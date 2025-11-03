@@ -93,13 +93,14 @@ const executeDailyPost = async (imageOptions = {}) => {
         // Do not remove the prompt if it was obtained from default
         if (dbPrompt?.id) {
             removeCompletedPrompt(dbPrompt.id);
+        }
+        if(process.env.DATABASE_URL && process.env.VOTING_ENABLED === 'true') {
             await insertVotingImage({
                 instagramPostId: instagramResult.mediaId,
                 imageUrl: publicImageUrl,
                 cloudinaryFolder: cloudinaryFolder,
             });
         }
-
         // Telegram notification
         try {
             const notifyRes = await sendTelegramNotification({
