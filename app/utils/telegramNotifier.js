@@ -4,6 +4,8 @@
  * - Message templates are in .env and support dynamic parameters {0},{1},{2},{3}
  */
 
+const {markAllSentNow} = require('../db/dbClient')
+const {labeledImageUrl} = require('./uploadToCloudinary')
 /**
  * Replaces {0},{1},{2},{3} in the template with provided values
  * @param {string} template
@@ -122,6 +124,97 @@ async function sendTelegramNotification({ status, imageUrl, caption, originalPro
     }
 }
 
+/**
+ * Send annotated media groups and a follow-up inline keyboard message.
+ * Marks all images as sent afterwards.
+ * @param {string[]} urls - Array of image URLs to display in groups
+ * @param {string} text - Header text shown in the first group's caption and message body
+ * @param {Array<Array<{text:string, url:string}>>} rows - Inline keyboard rows
+ * @returns {Promise<any>} - Telegram API response for the sendMessage call
+ */
+async function sendMessageWithInlineKeyboard(urls, text, rows) {
+  await sendAnnotatedMediaGroupsWithOptionalHeader(urls, text)
+  const result = await sendInlineKeyboard(text, rows)
+  await markAllSentNow()
+  return result
+}
+
+/**
+ * Send a Telegram message with an inline keyboard.
+ * @param {string} text - Message text content
+ * @param {Array<Array<{text:string, url:string}>>} rows - Inline keyboard rows
+ * @returns {Promise<any>} - Telegram API response JSON
+ */
+async function sendInlineKeyboard(text, rows) {
+  const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text,
+      parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: rows },
+      disable_web_page_preview: true,
+    }),
+  })
+  if (!res.ok) {
+    const txt = await res.text()
+    throw new Error(`Telegram sendMessage failed: ${res.status} ${txt}`)
+  }
+  return res.json()
+}
+
+
+/**
+ * Send images in groups (max 10) with optional header in the first group's caption.
+ * Labels each image with an incremental number using Cloudinary transformation.
+ * @param {string[]} urls - Array of image URLs
+ * @param {string} [headerText] - Optional caption for the first image of the first group
+ * @returns {Promise<void>}
+ */
+async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText) {
+  if (!urls || urls.length === 0) throw new Error('No images to send')
+
+  const chunk = (arr, size) => {
+    const out = []
+    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+    return out
+  }
+
+  const groups = chunk(urls, 10)
+
+  let globalIndex = 0
+  for (let gi = 0; gi < groups.length; gi++) {
+    const g = groups[gi]
+    const media = []
+
+    for (let i = 0; i < g.length; i++) {
+      const url = g[i]
+      const label = ++globalIndex
+      const transformed = labeledImageUrl(url, label)
+      media.push({ type: 'photo', media: transformed })
+    }
+
+    // Header come caption sul primo elemento del PRIMO gruppo
+    if (gi === 0 && headerText) {
+      media[0].caption = headerText
+      media[0].parse_mode = 'HTML'
+    }
+
+    const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMediaGroup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, media }),
+    })
+    if (!resp.ok) {
+      const txt = await resp.text()
+      throw new Error(`Telegram sendMediaGroup (annotated) failed: ${resp.status} ${txt}`)
+    }
+    await resp.json()
+  }
+}
+
 module.exports = {
   sendTelegramNotification,
+  sendMessageWithInlineKeyboard,
 };

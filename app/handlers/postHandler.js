@@ -80,7 +80,7 @@ const executeDailyPost = async (imageOptions = {}) => {
 
         // Step 5: Publish to Instagram (function handles refresh+retry if needed)
         console.log('📱 STEP 6: Publish to Instagram');
-        let instagramResult = await publishToInstagram(publicImageUrl, finalCaption.caption);
+        let instagramResult = await publishToInstagram(publicImageUrl, finalCaption.caption,false);
 
         let executionTime = ((Date.now() - startTime) / 1000).toFixed(2);
         

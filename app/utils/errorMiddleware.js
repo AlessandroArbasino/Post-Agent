@@ -5,7 +5,7 @@
  * Install global process-level error handlers once per process.
  * This will report unhandledRejection and uncaughtException to Telegram.
  */
-export function installGlobalErrorHandlers() {
+const installGlobalErrorHandlers = () => {
   if (globalThis.__globalErrorHandlersInstalled) return;
   globalThis.__globalErrorHandlersInstalled = true;
 
@@ -39,7 +39,7 @@ export function installGlobalErrorHandlers() {
  * @param {object} [options]
  * @param {string} [options.operation] Optional operation name for context
  */
-export function withErrorReporting(handler, options = {}) {
+const withErrorReporting = (handler, options = {}) => {
   const { operation } = options;
   return async function wrapped(request, ...rest) {
     try {
@@ -70,3 +70,9 @@ export function withErrorReporting(handler, options = {}) {
     }
   };
 }
+
+module.exports = {
+    installGlobalErrorHandlers,
+    withErrorReporting
+}
+    

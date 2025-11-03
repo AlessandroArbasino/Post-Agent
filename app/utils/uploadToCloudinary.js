@@ -31,6 +31,63 @@ const uploadToCloudinary = async (imageUrl, options = {}) => {
     return { success: true, publicUrl: result.secure_url, cloudinaryData: result };
 };
 
+/**
+ * Delete a Cloudinary folder by path.
+ * @param {string} path - Cloudinary folder path to delete
+ * @returns {Promise<any>} - Cloudinary API response
+ */
+const deleteFolder = async (path) => {
+  return cloudinary.api.delete_folder(path)
+}
+
+// Build a Cloudinary fetch URL with a bottom-left text label overlay.
+// This avoids local image processing and works on Vercel.
+/**
+ * Create a Cloudinary fetch URL with a bottom-left text label overlay.
+ * @param {string} url - Public image URL to transform (fetched by Cloudinary)
+ * @param {string|number} label - Text label (number/hash) to overlay
+ * @param {Object} [opts]
+ * @param {number} [opts.size=512] - Target square size (width/height)
+ * @param {number} [opts.margin=12] - Margin from the bottom-left corner
+ * @param {number} [opts.fontSize=28] - Overlay font size
+ * @param {string} [opts.fontFamily='Arial'] - Overlay font family
+ * @param {string} [opts.fontWeight='bold'] - Overlay font weight
+ * @param {string} [opts.textColor='white'] - Overlay text color
+ * @returns {Promise<string>} - Signed Cloudinary fetch URL with transformations
+ */
+const labeledImageUrl = async (url, label, opts = {}) => {
+  const size = opts.size ?? 512
+  const margin = opts.margin ?? 12
+  const fontSize = opts.fontSize ?? 28
+  const fontFamily = opts.fontFamily ?? 'Arial'
+  const fontWeight = opts.fontWeight ?? 'bold'
+  const textColor = opts.textColor ?? 'white'
+
+  const transformation = [
+    { width: size, height: size, crop: 'fill' },
+    {
+      overlay: {
+        font_family: fontFamily,
+        font_weight: fontWeight,
+        font_size: fontSize,
+        text: `#${label}`,
+      },
+      color: textColor,
+      gravity: 'south_west',
+      x: margin,
+      y: margin,
+    },
+  ]
+
+  return cloudinary.url(url, {
+    type: 'fetch',
+    secure: true,
+    transformation,
+  })
+}
+
 module.exports = {
-    uploadToCloudinary
+    uploadToCloudinary,
+    deleteFolder,
+    labeledImageUrl
 };
