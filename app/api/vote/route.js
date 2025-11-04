@@ -1,29 +1,42 @@
 import { NextResponse } from 'next/server'
-const {installGlobalErrorHandlers, withErrorReporting} = require('../../utils/errorMiddleware')
-const { updateVote } = require('../../db/dbClient')
+import { Telegraf } from 'telegraf'
+import { createHash } from 'crypto'
+const { updateVote, getAllImageForVoting } = require('../../db/dbClient')
 
-function isValidUrl(value) {
+export const runtime = 'nodejs'
+
+// Create bot instance once per process
+const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN)
+
+// Helper to compute a short stable hash for callback_data
+function shortHash(input) {
+  return createHash('sha1').update(String(input)).digest('hex').slice(0, 12)
+}
+
+// Handle button clicks
+bot.on('callback_query', async (ctx) => {
+  const data = ctx.callbackQuery?.data || ''
   try {
-    const u = new URL(value)
-    return u.protocol === 'http:' || u.protocol === 'https:'
-  } catch {
-    return false
+    if (data.startsWith('vote:')) {
+      const h = data.slice('vote:'.length)
+      const images = await getAllImageForVoting()
+      const match = images.find((it) => shortHash(it.image_url) === h)
+      if (!match) {
+        await ctx.answerCbQuery('Elemento non trovato', { show_alert: true })
+        return
+      }
+      const updated = await updateVote(match.image_url)
+      await ctx.answerCbQuery(`Voto registrato (#${updated?.votes ?? ''})`)
+    } else {
+      await ctx.answerCbQuery('Azione non riconosciuta')
+    }
+  } catch (e) {
+    try { await ctx.answerCbQuery('Errore', { show_alert: true }) } catch {}
   }
+})
+
+export async function POST(request) {
+  const update = await request.json()
+  await bot.handleUpdate(update)
+  return NextResponse.json({ ok: true })
 }
-
-// Install global error handlers once per process
-installGlobalErrorHandlers()
-
-async function handler(req) {
-  const body = await req.json().catch(() => ({}))
-  const url = (body.url || '').trim()
-
-  if (!url || !isValidUrl(url)) {
-    throw new Error('Invalid or missing url')
-  }
-
-  const row = await updateVote(url)
-  return NextResponse.json({ url: row.image_url, votes: row.votes }, { status: 200 })
-}
-
-export const POST = await withErrorReporting(handler, { operation: 'vote' })

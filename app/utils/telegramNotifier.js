@@ -146,11 +146,14 @@ async function sendMessageWithInlineKeyboard(urls, text, rows) {
  * @returns {Promise<any>} - Telegram API response JSON
  */
 async function sendInlineKeyboard(text, rows) {
-  const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      chat_id: TELEGRAM_CHAT_ID,
+      chat_id: chatId,
       text,
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: rows },
@@ -175,6 +178,9 @@ async function sendInlineKeyboard(text, rows) {
 async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText) {
   if (!urls || urls.length === 0) throw new Error('No images to send')
 
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+
   const chunk = (arr, size) => {
     const out = []
     for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
@@ -191,7 +197,7 @@ async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText) {
     for (let i = 0; i < g.length; i++) {
       const url = g[i]
       const label = ++globalIndex
-      const transformed = labeledImageUrl(url, label)
+      const transformed = url// labeledImageUrl(url, label)
       media.push({ type: 'photo', media: transformed })
     }
 
@@ -201,11 +207,12 @@ async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText) {
       media[0].parse_mode = 'HTML'
     }
 
-    const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMediaGroup`, {
+    const resp = await fetch(`https://api.telegram.org/bot${token}/sendMediaGroup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, media }),
+      body: JSON.stringify({ chat_id: chatId, media }),
     })
+
     if (!resp.ok) {
       const txt = await resp.text()
       throw new Error(`Telegram sendMediaGroup (annotated) failed: ${resp.status} ${txt}`)

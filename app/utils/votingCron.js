@@ -2,6 +2,7 @@ const { sendMessageWithInlineKeyboard } = require('./telegramNotifier')
 const { getTopImage, getAllImageFolders } = require('../db/dbClient')
 const { publishToInstagram } = require('./publishToInstagram')
 const { deleteFolder } = require('./uploadToCloudinary')
+const crypto = require('crypto')
 
 /**
  * Send a voting prompt to Telegram with inline keyboard buttons.
@@ -10,13 +11,12 @@ const { deleteFolder } = require('./uploadToCloudinary')
  * @returns {Promise<{total:number, sent_buttons:number}>}
  */
 const votingCron = async(images) => {
-  const base = process.env.APP_BASE_URL
-    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  const shortHash = (s) => crypto.createHash('sha1').update(String(s)).digest('hex').slice(0, 12)
 
   const rows = images.map((u, i) => [
     {
       text: `Vota #${i + 1}`,
-      url: `${base}/api/vote?url=${encodeURIComponent(u.image_url)}`,
+      callback_data: `vote:${shortHash(u.image_url)}`,
     },
   ])
 
