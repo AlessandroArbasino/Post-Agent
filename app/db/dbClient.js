@@ -213,6 +213,15 @@ const markAllSentNow = async () => {
   `
 }
 
+/**
+ * Delete all voting images.
+ * @returns {Promise<void>}
+ */
+const deleteAllVotingImages = async () => {
+  const sql = await getClient();
+  await sql`delete from voting_images`
+}
+
 module.exports = {
     getInstagramConfig,
     updateInstagramToken,
@@ -223,6 +232,7 @@ module.exports = {
     getTopImage,
     getAllImageFolders,
     getAllImageForVoting,
-    markAllSentNow
+    markAllSentNow,
+    deleteAllVotingImages
 };
 

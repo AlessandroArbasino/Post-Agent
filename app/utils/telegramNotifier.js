@@ -124,6 +124,21 @@ async function sendTelegramNotification({ status, imageUrl, caption, originalPro
     }
 }
 
+async function sendWinnerNotification({ permalink, parseMode }) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  const mode = parseMode || process.env.TELEGRAM_PARSE_MODE || undefined;
+  if (!token || !chatId) {
+    throw new Error('TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured');
+  }
+  const caption = formatTemplate(process.env.TELEGRAM_WINNER_TEMPLATE || 'Winner: {0}', [permalink]);
+  if (!permalink) {
+    throw new Error('Permalink not provided');
+  }
+
+  return await sendTelegramPhoto({ token, chatId, photo: permalink, caption, parseMode: mode });
+}
+
 /**
  * Send annotated media groups and a follow-up inline keyboard message.
  * Marks all images as sent afterwards.
@@ -224,4 +239,5 @@ async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText) {
 module.exports = {
   sendTelegramNotification,
   sendMessageWithInlineKeyboard,
+  sendWinnerNotification,
 };

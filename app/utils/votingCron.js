@@ -1,7 +1,8 @@
-const { sendMessageWithInlineKeyboard } = require('./telegramNotifier')
-const { getTopImage, getAllImageFolders } = require('../db/dbClient')
+const { sendMessageWithInlineKeyboard, sendWinnerNotification } = require('./telegramNotifier')
+const { getAllImageFolders, deleteAllVotingImages } = require('../db/dbClient')
 const { publishToInstagram } = require('./publishToInstagram')
 const { deleteFolder } = require('./uploadToCloudinary')
+const { getBestPhoto } = require('./scoring')
 const crypto = require('crypto')
 
 /**
@@ -32,17 +33,18 @@ const votingCron = async(images) => {
 
 /**
  * Publish the weekly winner to Instagram and optionally clean Cloudinary folders.
- * Uses `getTopImage()` and posts as Instagram Story.
+ * Uses `getBestPhoto()` and posts as Instagram Story.
  * @returns {Promise<{ok:boolean, published:any, image_url:string, votes:number, caption:string} | {error:string, status:number}>}
  */
 const publishWinner = async() => {
-  const top = await getTopImage()
+  const top = await getBestPhoto()
   if (!top) {
     return { error: 'No images available to publish', status: 404 }
   }
 
-  const caption = `The winner is ${top.image_url}`
-  const publishResult = await publishToInstagram(top.image_url, caption, true)
+  const publishResult = await publishToInstagram(top.image_url, '', true)
+
+  await sendWinnerNotification({ permalink: publishResult.permalink })
 
   if (process.env.CLOUDINARY_ENABLE_DELETE === 'true') {
     try {
@@ -54,6 +56,10 @@ const publishWinner = async() => {
     } catch (e) {
       console.warn('Cloudinary bulk cleanup skipped/failed', e)
     }
+    // just for test otherwise do it always if db is connected
+    if(process.env.DATABASE_URL) {
+      await deleteAllVotingImages()
+    }
   }
 
   return {
@@ -61,7 +67,6 @@ const publishWinner = async() => {
     published: publishResult,
     image_url: top.image_url,
     votes: top.votes,
-    caption,
   }
 }
 

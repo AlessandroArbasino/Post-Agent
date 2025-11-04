@@ -1,4 +1,5 @@
 const { fetchInstagramMetrics } = require('./publishToInstagram')
+const { getAllImageForVoting } = require('../db/dbClient')
 
 function getMultiplier(name, fallback, def = 1) {
   const v = process.env[name] ?? (fallback ? process.env[fallback] : undefined)
@@ -32,7 +33,7 @@ export async function scoreItems(items) {
         }
       }
       const score = like_count * LIKE_MULT + comments_count * COMMENT_MULT + (it.votes ?? 0) * VOTE_MULT
-      return { ...it, like_count, comments_count, score }
+      return { image_url: it.image_url, like_count, comments_count, score }
     })
   )
   return results
@@ -41,12 +42,12 @@ export async function scoreItems(items) {
 /**
  * Return the highest scored item from a list.
  * Uses `scoreItems()` and selects the item with max `score`.
- * @param {Array<any>} items - Items to evaluate
- * @returns {Promise<any|null>} - Best item or null when input is empty
+ * @returns {Promise<any>} - Best item
  */
-export async function getBestPhoto(items) {
-  if (!items || items.length === 0) return null
-  const scored = await scoreItems(items)
+export async function getBestPhoto() {
+  const picture = await getAllImageForVoting()
+  if (!picture || picture.length === 0) throw new Error('No images available to publish')
+  const scored = await scoreItems(picture)
   let best = null
   for (const s of scored) {
     if (!best || s.score > best.score) best = s
