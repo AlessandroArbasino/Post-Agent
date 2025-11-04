@@ -134,8 +134,8 @@ const insertVotingImage = async ({ instagramPostId, imageUrl, cloudinaryFolder }
         const sql = await getClient();
         const rows = await sql`INSERT INTO voting_images (instagram_post_id, image_url, cloudinary_folder, create_date)
                                VALUES (${instagramPostId}, ${imageUrl}, ${cloudinaryFolder}, NOW())
-                               RETURNING id`;
-        const id = rows?.[0]?.id;
+                               RETURNING image_id`;
+        const id = rows?.[0]?.image_id;
         console.log('✅ voting_images insert id:', id);
         return { id };
     } catch (error) {
