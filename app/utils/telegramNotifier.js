@@ -246,4 +246,5 @@ module.exports = {
   sendTelegramNotification,
   sendMessageWithInlineKeyboard,
   sendWinnerNotification,
+  formatTemplate
 };
