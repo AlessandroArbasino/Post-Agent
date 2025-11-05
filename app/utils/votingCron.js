@@ -21,11 +21,10 @@ const votingCron = async(images) => {
     },
   ])
 
-  const header = process.env.INLINE_KEYBOARD_HEADER
   const imageurls = images.map((u) => u.image_url)
 
   if (rows.length > 0) {
-    await sendMessageWithInlineKeyboard(imageurls, header || 'Seleziona un voto', rows)
+    await sendMessageWithInlineKeyboard(imageurls, rows)
   }
 
   return { total: images.length, sent_buttons: rows.length }
@@ -57,9 +56,10 @@ const publishWinner = async() => {
       console.warn('Cloudinary bulk cleanup skipped/failed', e)
     }
     // just for test otherwise do it always if db is connected
-    if(process.env.DATABASE_URL) {
-      await deleteAllVotingImages()
-    }
+  }
+  
+  if(process.env.DATABASE_URL) {
+    await deleteAllVotingImages()
   }
 
   return {

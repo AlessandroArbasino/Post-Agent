@@ -37,11 +37,31 @@ const uploadToCloudinary = async (imageUrl, options = {}) => {
  * @returns {Promise<any>} - Cloudinary API response
  */
 const deleteFolder = async (path) => {
+  const opts = { type: 'upload', invalidate: true }
+  try {
+    await cloudinary.api.delete_resources_by_prefix(path, { ...opts, resource_type: 'image' })
+    await cloudinary.api.delete_resources_by_prefix(path, { ...opts, resource_type: 'video' })
+    await cloudinary.api.delete_resources_by_prefix(path, { ...opts, resource_type: 'raw' })
+  } catch (_) {}
+
+  const deleteEmptySubfolders = async (p) => {
+    let res
+    try {
+      res = await cloudinary.api.sub_folders(p)
+    } catch (_) {
+      res = { folders: [] }
+    }
+    const folders = res.folders || []
+    for (const f of folders) {
+      await deleteEmptySubfolders(f.path)
+      try { await cloudinary.api.delete_folder(f.path) } catch (_) {}
+    }
+  }
+
+  await deleteEmptySubfolders(path)
   return cloudinary.api.delete_folder(path)
 }
 
-// Build a Cloudinary fetch URL with a bottom-left text label overlay.
-// This avoids local image processing and works on Vercel.
 /**
  * Create a Cloudinary fetch URL with a bottom-left text label overlay.
  * @param {string} url - Public image URL to transform (fetched by Cloudinary)

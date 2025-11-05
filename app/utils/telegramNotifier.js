@@ -143,13 +143,16 @@ async function sendWinnerNotification({ permalink, parseMode }) {
  * Send annotated media groups and a follow-up inline keyboard message.
  * Marks all images as sent afterwards.
  * @param {string[]} urls - Array of image URLs to display in groups
- * @param {string} text - Header text shown in the first group's caption and message body
  * @param {Array<Array<{text:string, url:string}>>} rows - Inline keyboard rows
  * @returns {Promise<any>} - Telegram API response for the sendMessage call
  */
-async function sendMessageWithInlineKeyboard(urls, text, rows) {
-  await sendAnnotatedMediaGroupsWithOptionalHeader(urls, text)
+async function sendMessageWithInlineKeyboard(urls, rows) {
+  const header = process.env.TELEGRAM_GROUP_IMAGE_HEADER
+  await sendAnnotatedMediaGroupsWithOptionalHeader(urls, header)
+
+  const text = process.env.TELEGRAM_KEYBOARD_HEADER
   const result = await sendInlineKeyboard(text, rows)
+  
   await markAllSentNow()
   return result
 }
