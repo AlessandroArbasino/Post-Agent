@@ -143,11 +143,96 @@ const insertVotingImage = async ({ instagramPostId, imageUrl, cloudinaryFolder }
     }
 };
 
+/**
+ * Increment vote count for an image URL (creates row if missing).
+ * @param {string} url - Image URL used as unique key
+ * @returns {Promise<{image_url:string, votes:number}>}
+ */
+const updateVote = async (url) => {
+  const sql = await getClient();
+  const result = await sql`
+    insert into voting_images (image_url, votes)
+    values (${url}, 0)
+    on conflict (image_url)
+    do update set votes = voting_images.votes + 1
+    returning image_url, votes
+  `
+  return result[0]
+}
+
+/**
+ * Get the image with the highest vote count.
+ * @returns {Promise<{image_url:string, votes:number}>}
+ */
+const getTopImage = async () => {
+  const sql = await getClient();
+  const rows = await sql`
+    select image_url, votes
+    from voting_images
+    order by votes desc
+    limit 1
+  `
+  return rows[0]
+}
+
+/**
+ * Get all distinct Cloudinary folder names from voting images.
+ * @returns {Promise<Array<{cloudinary_folder:string}>>}
+ */
+const getAllImageFolders = async () => {
+  const sql = await getClient();
+  const rows = await sql`
+    select distinct(cloudinary_folder)
+    from voting_images
+  `
+  return rows
+}
+
+/**
+ * Get all images eligible for voting with related metadata.
+ * @returns {Promise<Array<{image_url:string, instagram_post_id:string|null, votes:number|null, sent_date:string|null}>>}
+ */
+const getAllImageForVoting = async () => {
+  const sql = await getClient();
+  const rows = await sql`
+    select distinct(image_url), instagram_post_id, votes, sent_date
+    from voting_images
+  `
+  return rows
+}
+
+/**
+ * Mark all voting images as sent by setting current timestamp.
+ * @returns {Promise<void>}
+ */
+const markAllSentNow = async () => {
+  const sql = await getClient();
+  await sql`
+    update voting_images
+    set sent_date = now()
+  `
+}
+
+/**
+ * Delete all voting images.
+ * @returns {Promise<void>}
+ */
+const deleteAllVotingImages = async () => {
+  const sql = await getClient();
+  await sql`delete from voting_images`
+}
+
 module.exports = {
     getInstagramConfig,
     updateInstagramToken,
     getNextPrompt,
     removeCompletedPrompt,
-    insertVotingImage
+    insertVotingImage,
+    updateVote,
+    getTopImage,
+    getAllImageFolders,
+    getAllImageForVoting,
+    markAllSentNow,
+    deleteAllVotingImages
 };
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { withErrorReporting, installGlobalErrorHandlers } from '../../utils/errorMiddleware';
+const {installGlobalErrorHandlers, withErrorReporting} = require('../../utils/errorMiddleware')
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;

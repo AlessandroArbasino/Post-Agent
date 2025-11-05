@@ -11,9 +11,10 @@ const { manageLongLiveToken } = require('../utils/instagramToken');
  * Publish an image to Instagram
  * @param {string} imageUrl - Public image URL (must be accessible by Instagram)
  * @param {string} caption - Post caption
+ * @param {boolean} isInstagramStories - Whether to publish to Instagram Stories
  * @returns {Promise<Object>} - Publishing result
  */
-const publishToInstagram = async (imageUrl, caption = '') => {
+const publishToInstagram = async (imageUrl, caption = '', isInstagramStories = false) => {
     const graphVersion = process.env.INSTAGRAM_GRAPH_VERSION || 'v21.0';
     let instagramConfig = null;
 
@@ -59,24 +60,29 @@ const publishToInstagram = async (imageUrl, caption = '') => {
     console.log(`   Image URL: ${imageUrl}`);
     console.log(`   Caption: ${caption.substring(0, 50)}...`);
 
-    const { creationId, mediaId, permalink } = await managePublish(token, igUserId, graphVersion, imageUrl, caption);
+    const { creationId, mediaId, permalink } = await managePublish(token, igUserId, graphVersion, imageUrl, caption, isInstagramStories);
         console.log(`🎉 Post published successfully! Media ID: ${mediaId}`);
         if (permalink) console.log(`🔗 Permalink: ${permalink}`);
         return { success: true, mode: 'executed', creationId, mediaId, permalink, message: 'Instagram post published successfully' };
 };
-
-async function managePublish(token, igUserId, graphVersion, imageUrl, caption) {
+const managePublish = async(token, igUserId, graphVersion, imageUrl, caption, isInstagramStories = false) => {
     // Step 1: Create media container
     const createMediaResponse = await fetch(
         `https://graph.facebook.com/${graphVersion}/${igUserId}/media`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                image_url: imageUrl,
-                caption: caption || '',
-                access_token: token
-            })
+            body: JSON.stringify((() => {
+                const payload = {
+                    image_url: imageUrl,
+                    caption: caption || '',
+                    access_token: token
+                };
+                if (isInstagramStories) {
+                    payload.media_type = 'STORIES';
+                }
+                return payload;
+            })())
         }
     );
 
@@ -136,7 +142,33 @@ async function managePublish(token, igUserId, graphVersion, imageUrl, caption) {
     return { creationId, mediaId, permalink };
 }
 
+const fetchInstagramMetrics = async(mediaId) => {
+  const graphVersion = process.env.IG_GRAPH_VERSION
+  let instagramConfig = null;
+  // Get Instagram config from DB if connected to DB, otherwise from ENV without crypto
+  if(process.env.DATABASE_URL) {
+      instagramConfig = await getInstagramConfig();
+  }else{
+      instagramConfig = {
+          token: process.env.INSTAGRAM_ACCESS_TOKEN,
+          //assuming token is valid and not expired if there is no database connection
+          createdate: new Date().toISOString()
+      };
+  }
+  const res = await fetch(`https://graph.facebook.com/${graphVersion}/${mediaId}?fields=like_count,comments_count&access_token=${instagramConfig.token}`)
+  if (!res.ok) {
+    const txt = await res.text()
+    throw new Error(`Instagram metrics failed: ${res.status} ${txt}`)
+  }
+  const json = await res.json()
+  return {
+    like_count: json.like_count ?? 0,
+    comments_count: json.comments_count ?? 0,
+  }
+}
+
 
 module.exports = {
-    publishToInstagram
+    publishToInstagram,
+    fetchInstagramMetrics
 };
