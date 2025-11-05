@@ -11,7 +11,7 @@ const crypto = require('crypto')
  * @param {Array<{image_url:string, [key:string]:any}>} images - List of images to vote on
  * @returns {Promise<{total:number, sent_buttons:number}>}
  */
-const votingCron = async(images) => {
+const votingCron = async(images, topicId) => {
   const shortHash = (s) => crypto.createHash('sha1').update(String(s)).digest('hex').slice(0, 12)
 
   const rows = images.map((u, i) => [
@@ -24,7 +24,7 @@ const votingCron = async(images) => {
   const imageurls = images.map((u) => u.image_url)
 
   if (rows.length > 0) {
-    await sendMessageWithInlineKeyboard(imageurls, rows)
+    await sendMessageWithInlineKeyboard(imageurls, rows, topicId)
   }
 
   return { total: images.length, sent_buttons: rows.length }
@@ -35,7 +35,7 @@ const votingCron = async(images) => {
  * Uses `getBestPhoto()` and posts as Instagram Story.
  * @returns {Promise<{ok:boolean, published:any, image_url:string, votes:number, caption:string} | {error:string, status:number}>}
  */
-const publishWinner = async() => {
+const publishWinner = async(topicId) => {
   const top = await getBestPhoto()
   if (!top) {
     return { error: 'No images available to publish', status: 404 }
@@ -43,7 +43,7 @@ const publishWinner = async() => {
 
   const publishResult = await publishToInstagram(top.image_url, '', true)
 
-  await sendWinnerNotification({ permalink: publishResult.permalink })
+  await sendWinnerNotification({ photoUrl: top.image_url, permalink: publishResult.permalink, parseMode: undefined, topicId })
 
   if (process.env.CLOUDINARY_ENABLE_DELETE === 'true') {
     try {
@@ -55,7 +55,6 @@ const publishWinner = async() => {
     } catch (e) {
       console.warn('Cloudinary bulk cleanup skipped/failed', e)
     }
-    // just for test otherwise do it always if db is connected
   }
   
   if(process.env.DATABASE_URL) {

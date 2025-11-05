@@ -109,7 +109,8 @@ const executeDailyPost = async (imageOptions = {}) => {
                 caption: finalCaption.caption,
                 originalPrompt: refineResult.original,
                 refinedPrompt: refineResult.refined,
-                permalink: instagramResult.permalink
+                permalink: instagramResult.permalink,
+                topicId: process.env.DAILY_PICS_THREAD_ID
             });
             if (!notifyRes?.success) {
                 console.warn('⚠️ Telegram notification failed (success path):', notifyRes?.error);

@@ -12,9 +12,9 @@ const voteHandler = async() => {
 
   let result = null
   if (!anySent) {
-    result = await votingCron(images)
+    result = await votingCron(images, process.env.VOTE_HUB_THREAD_ID)
   } else {
-    result = await publishWinner()
+    result = await publishWinner(process.env.WEEKLY_WINNER_THREAD_ID)
   }
 
   return { action: anySent ? 'publish' : 'voting', ...result }

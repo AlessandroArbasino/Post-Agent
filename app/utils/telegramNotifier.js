@@ -27,13 +27,14 @@ function formatTemplate(template = '', params = []) {
  * @param {string} options.text - Message text
  * @param {string} [options.parseMode] - MarkdownV2 | Markdown | HTML
  */
-async function sendTelegramText({ token, chatId, text, parseMode }) {
+async function sendTelegramText({ token, chatId, text, parseMode, topicId }) {
   const url = `https://api.telegram.org/bot${encodeURIComponent(token)}/sendMessage`;
   const body = {
     chat_id: chatId,
     text,
   };
   if (parseMode) body.parse_mode = parseMode;
+  if (topicId) body.message_thread_id = topicId;
 
   const res = await fetch(url, {
     method: 'POST',
@@ -56,7 +57,7 @@ async function sendTelegramText({ token, chatId, text, parseMode }) {
  * @param {string} [options.caption] - Caption
  * @param {string} [options.parseMode] - MarkdownV2 | Markdown | HTML
  */
-async function sendTelegramPhoto({ token, chatId, photo, caption, parseMode }) {
+async function sendTelegramPhoto({ token, chatId, photo, caption, parseMode, topicId }) {
   const url = `https://api.telegram.org/bot${encodeURIComponent(token)}/sendPhoto`;
   const body = {
     chat_id: chatId,
@@ -64,6 +65,7 @@ async function sendTelegramPhoto({ token, chatId, photo, caption, parseMode }) {
   };
   if (caption) body.caption = caption;
   if (parseMode) body.parse_mode = parseMode;
+  if (topicId) body.message_thread_id = topicId;
 
   const res = await fetch(url, {
     method: 'POST',
@@ -89,7 +91,7 @@ async function sendTelegramPhoto({ token, chatId, photo, caption, parseMode }) {
  * @param {string} [payload.permalink] - Public link to the Instagram post
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-async function sendTelegramNotification({ status, imageUrl, caption, originalPrompt, refinedPrompt, error, permalink }) {
+async function sendTelegramNotification({ status, imageUrl, caption, originalPrompt, refinedPrompt, error, permalink, topicId }) {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
     const parseMode = process.env.TELEGRAM_PARSE_MODE || undefined; // opzionale
@@ -110,21 +112,21 @@ async function sendTelegramNotification({ status, imageUrl, caption, originalPro
       // Se abbiamo un'immagine, inviamo la foto con caption formattata; altrimenti testo
       if (imageUrl) {
         const captionText = formatTemplate(successTpl, successParams);
-        await sendTelegramPhoto({ token, chatId, photo: imageUrl, caption: captionText, parseMode });
+        await sendTelegramPhoto({ token, chatId, photo: imageUrl, caption: captionText, parseMode, topicId });
         return { success: true };
       } else {
         const text = formatTemplate(successTpl, successParams);
-        await sendTelegramText({ token, chatId, text, parseMode });
+        await sendTelegramText({ token, chatId, text, parseMode, topicId });
         return { success: true };
       }
     } else {
       const text = formatTemplate(failureTpl, failureParams);
-      await sendTelegramText({ token, chatId, text, parseMode });
+      await sendTelegramText({ token, chatId, text, parseMode, topicId });
       return { success: true };
     }
 }
 
-async function sendWinnerNotification({ permalink, parseMode }) {
+async function sendWinnerNotification({ photoUrl,permalink, parseMode }) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   const mode = parseMode || process.env.TELEGRAM_PARSE_MODE || undefined;
@@ -136,7 +138,7 @@ async function sendWinnerNotification({ permalink, parseMode }) {
     throw new Error('Permalink not provided');
   }
 
-  return await sendTelegramPhoto({ token, chatId, photo: permalink, caption, parseMode: mode });
+  return await sendTelegramPhoto({ token, chatId, photo: photoUrl, caption, parseMode: mode, topicId });
 }
 
 /**
@@ -146,12 +148,12 @@ async function sendWinnerNotification({ permalink, parseMode }) {
  * @param {Array<Array<{text:string, url:string}>>} rows - Inline keyboard rows
  * @returns {Promise<any>} - Telegram API response for the sendMessage call
  */
-async function sendMessageWithInlineKeyboard(urls, rows) {
+async function sendMessageWithInlineKeyboard(urls, rows, topicId) {
   const header = process.env.TELEGRAM_GROUP_IMAGE_HEADER
-  await sendAnnotatedMediaGroupsWithOptionalHeader(urls, header)
+  await sendAnnotatedMediaGroupsWithOptionalHeader(urls, header, topicId)
 
   const text = process.env.TELEGRAM_KEYBOARD_HEADER
-  const result = await sendInlineKeyboard(text, rows)
+  const result = await sendInlineKeyboard(text, rows, topicId)
   
   await markAllSentNow()
   return result
@@ -163,7 +165,7 @@ async function sendMessageWithInlineKeyboard(urls, rows) {
  * @param {Array<Array<{text:string, url:string}>>} rows - Inline keyboard rows
  * @returns {Promise<any>} - Telegram API response JSON
  */
-async function sendInlineKeyboard(text, rows) {
+async function sendInlineKeyboard(text, rows, topicId) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -176,6 +178,7 @@ async function sendInlineKeyboard(text, rows) {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: rows },
       disable_web_page_preview: true,
+      message_thread_id: topicId,
     }),
   })
   if (!res.ok) {
@@ -193,7 +196,7 @@ async function sendInlineKeyboard(text, rows) {
  * @param {string} [headerText] - Optional caption for the first image of the first group
  * @returns {Promise<void>}
  */
-async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText) {
+async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText, topicId) {
   if (!urls || urls.length === 0) throw new Error('No images to send')
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -228,7 +231,7 @@ async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText) {
     const resp = await fetch(`https://api.telegram.org/bot${token}/sendMediaGroup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, media }),
+      body: JSON.stringify({ chat_id: chatId, media, message_thread_id: topicId }),
     })
 
     if (!resp.ok) {
