@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { Telegraf } from 'telegraf'
 import { createHash } from 'crypto'
 const { updateVote, getAllImageForVoting } = require('../../db/dbClient')
+const { formatTemplate } = require('../../utils/telegramNotifier')
 
 export const runtime = 'nodejs'
 
@@ -32,6 +33,18 @@ bot.on('callback_query', async (ctx) => {
     }
   } catch (e) {
     try { await ctx.answerCbQuery('Errore', { show_alert: true }) } catch {}
+  }
+})
+
+// Welcome new members joining the group
+bot.on('new_chat_members', async (ctx) => {
+  const members = ctx.message?.new_chat_members || []
+  for (const m of members) {
+    try {
+      const caption = formatTemplate(process.env.TELEGRAM_WELCOME_TEMPLATE, [m.username]);
+      const opts = { message_thread_id: process.env.WELCOME_THREAD_ID }
+      await ctx.reply(caption, opts)
+    } catch {}
   }
 })
 
