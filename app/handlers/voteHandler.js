@@ -8,6 +8,11 @@ const { votingCron, publishWinner } = require('../utils/votingCron');
  */
 const voteHandler = async() => {
   const images = await getAllImageForVoting()
+
+  if(images.length === 0) {
+    throw new Error('No images available to vote on');
+  }
+  
   const anySent = Array.isArray(images) && images.some((i) => i.sent_date)
 
   let result = null
