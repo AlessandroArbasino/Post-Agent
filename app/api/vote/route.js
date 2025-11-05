@@ -40,11 +40,11 @@ bot.on('callback_query', async (ctx) => {
 bot.on('new_chat_members', async (ctx) => {
   const members = ctx.message?.new_chat_members || []
   for (const m of members) {
-    try {
-      const caption = formatTemplate(process.env.TELEGRAM_WELCOME_TEMPLATE, [m.username]);
-      const opts = { message_thread_id: process.env.WELCOME_THREAD_ID }
-      await ctx.reply(caption, opts)
-    } catch {}
+    const full_name = m.username || (m.first_name || 'User') + (m.last_name ? ` ${m.last_name}` : '')
+    const user_tag_html = `<a href="tg://user?id=${m.id}">${full_name}</a>`
+    const caption = formatTemplate(process.env.TELEGRAM_WELCOME_TEMPLATE, [user_tag_html]);
+    const opts = { message_thread_id: process.env.WELCOME_THREAD_ID, parse_mode: 'HTML' }
+    await ctx.reply(caption, opts)
   }
 })
 
