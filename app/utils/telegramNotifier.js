@@ -156,7 +156,7 @@ async function editMessageToPlainText({ messageId, template, topicId }) {
   return data
 }
 
-async function sendWinnerNotification({ photoUrl,permalink, parseMode }) {
+async function sendWinnerNotification({ photoUrl,permalink, parseMode, topicId }) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   const mode = parseMode || process.env.TELEGRAM_PARSE_MODE || undefined;
