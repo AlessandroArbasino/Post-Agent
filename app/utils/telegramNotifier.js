@@ -126,19 +126,19 @@ async function sendTelegramNotification({ status, imageUrl, caption, originalPro
     }
 }
 
-async function editMessageToPlainText({ messageId, template, topicId }) {
+async function editMessageToPlainText({ telegramMessageId, template, topicId }) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
   if (!token || !chatId) throw new Error('TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured');
-  if (!messageId && messageId !== 0) throw new Error('messageId is required');
+  if (!telegramMessageId && telegramMessageId !== 0) throw new Error('telegramMessageId is required');
 
   const res = await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: chatId,
-      message_id: Number(messageId) || messageId,
+      message_id: Number(telegramMessageId) || telegramMessageId,
       text: template,
       reply_markup: null,
       disable_web_page_preview: true,
