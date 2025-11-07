@@ -126,30 +126,30 @@ async function sendTelegramNotification({ status, imageUrl, caption, originalPro
     }
 }
 
-async function editMessageToPlainText({ telegramMessageId, template, topicId }) {
+async function editMessageToPlainText({ telegramMessageId, template }) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
   if (!token || !chatId) throw new Error('TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured');
   if (!telegramMessageId && telegramMessageId !== 0) throw new Error('telegramMessageId is required');
 
-  const res = await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+  // Single-call edit: remove buttons with empty keyboard and update text
+  const editRes = await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: chatId,
       message_id: Number(telegramMessageId) || telegramMessageId,
       text: template,
-      reply_markup: null,
+      reply_markup: { inline_keyboard: [] },
       disable_web_page_preview: true,
-      message_thread_id: topicId,
     }),
   })
-  if (!res.ok) {
-    const txt = await res.text()
-    throw new Error(`Telegram editMessageText failed: ${res.status} ${txt}`)
+  if (!editRes.ok) {
+    const txt = await editRes.text()
+    throw new Error(`Telegram editMessageText failed: ${editRes.status} ${txt}`)
   }
-  const data = await res.json().catch(() => ({}))
+  const data = await editRes.json().catch(() => ({}))
   if (data && data.ok === false) {
     throw new Error(`Telegram editMessageText failed: ${data.description || 'unknown error'}`)
   }

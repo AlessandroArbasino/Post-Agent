@@ -1,5 +1,5 @@
 const { sendMessageWithInlineKeyboard, sendWinnerNotification, editMessageToPlainText } = require('./telegramNotifier')
-const { getAllImageFolders, deleteAllVotingImages, deleteAllVotingUsers, getTelegramMessage , insertTelegramMessage} = require('../db/dbClient')
+const { getAllImageFolders, deleteAllVotingImages, deleteAllVotingUsers, getTelegramMessage , insertTelegramMessage, deleteTelegramMessage} = require('../db/dbClient')
 const { publishToInstagram } = require('./publishToInstagram')
 const { deleteFolder } = require('./uploadToCloudinary')
 const { getBestPhoto } = require('./scoring')
@@ -64,15 +64,13 @@ const publishWinner = async(topicId) => {
 
   const message = await getTelegramMessage('voting_keyboard')
   if (message) {
-    await editMessageToPlainText({ telegramMessageId: message.telegram_message_id, template: process.env.END_VOTING_TEMPLATE, topicId: process.env.VOTE_HUB_THREAD_ID })
+    await editMessageToPlainText({ telegramMessageId: message.telegram_message_id, template: process.env.END_VOTING_TEMPLATE })
   }
   
   if(process.env.DATABASE_URL) {
     await deleteAllVotingImages()
-  }
-
-  if(process.env.DATABASE_URL) {
     await deleteAllVotingUsers()
+    await deleteTelegramMessage('voting_keyboard')
   }
 
   return {
