@@ -222,6 +222,40 @@ const deleteAllVotingImages = async () => {
   await sql`delete from voting_images`
 }
 
+
+const insertTelegramMessage = async (messageId, messageType) => {
+  const sql = await getClient();
+  await sql`insert into telegram_messages (telegram_message_id,message_type) values (${messageId}, ${messageType})`
+}
+
+const getTelegramMessage = async (messageType) => {
+  const sql = await getClient();
+  const rows = await sql`select * from telegram_messages where message_type = ${messageType}`
+  return rows[0]
+}
+
+const deleteTelegramMessage = async (messageType) => {
+  const sql = await getClient();
+  await sql`delete from telegram_messages where message_type = ${messageType}`
+}
+
+const getVotingUser = async (telegramUserId) => {
+  const sql = await getClient();
+  const rows = await sql`select * from voting_users where telegram_user_id = ${telegramUserId}`
+  return rows[0]
+}
+
+const insertVotingUser = async (telegramUserId) => {
+  const sql = await getClient();
+  await sql`insert into voting_users (telegram_user_id) values (${telegramUserId})`
+}
+
+const deleteAllVotingUsers = async () => {
+  const sql = await getClient();
+  await sql`delete from voting_users`
+}
+
+
 module.exports = {
     getInstagramConfig,
     updateInstagramToken,
@@ -233,6 +267,12 @@ module.exports = {
     getAllImageFolders,
     getAllImageForVoting,
     markAllSentNow,
-    deleteAllVotingImages
+    deleteAllVotingImages,
+    insertTelegramMessage,
+    getTelegramMessage,
+    deleteTelegramMessage,
+    getVotingUser,
+    insertVotingUser,
+    deleteAllVotingUsers
 };
 

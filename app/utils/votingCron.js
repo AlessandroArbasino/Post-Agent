@@ -1,5 +1,5 @@
-const { sendMessageWithInlineKeyboard, sendWinnerNotification } = require('./telegramNotifier')
-const { getAllImageFolders, deleteAllVotingImages } = require('../db/dbClient')
+const { sendMessageWithInlineKeyboard, sendWinnerNotification, editMessageToPlainText } = require('./telegramNotifier')
+const { getAllImageFolders, deleteAllVotingImages, deleteAllVotingUsers, getTelegramMessage , insertTelegramMessage} = require('../db/dbClient')
 const { publishToInstagram } = require('./publishToInstagram')
 const { deleteFolder } = require('./uploadToCloudinary')
 const { getBestPhoto } = require('./scoring')
@@ -23,11 +23,16 @@ const votingCron = async(images, topicId) => {
 
   const imageurls = images.map((u) => u.image_url)
 
+  let telegramMessageId = undefined
   if (rows.length > 0) {
-    await sendMessageWithInlineKeyboard(imageurls, rows, topicId)
+    const res = await sendMessageWithInlineKeyboard(imageurls, rows, topicId)
+    telegramMessageId = res?.result?.message_id ?? res?.message_id
+    if (telegramMessageId && process.env.DATABASE_URL) {
+      await insertTelegramMessage(String(telegramMessageId), 'voting_keyboard') 
+    }
   }
 
-  return { total: images.length, sent_buttons: rows.length }
+  return { total: images.length, sent_buttons: rows.length, telegram_message_id: telegramMessageId }
 }
 
 /**
@@ -56,9 +61,18 @@ const publishWinner = async(topicId) => {
       console.warn('Cloudinary bulk cleanup skipped/failed', e)
     }
   }
+
+  const message = await getTelegramMessage('voting_keyboard')
+  if (message) {
+    await editMessageToPlainText({ telegramMessageId: message.telegram_message_id, template: process.env.END_VOTING_TEMPLATE, topicId: process.env.VOTE_HUB_THREAD_ID })
+  }
   
   if(process.env.DATABASE_URL) {
     await deleteAllVotingImages()
+  }
+
+  if(process.env.DATABASE_URL) {
+    await deleteAllVotingUsers()
   }
 
   return {

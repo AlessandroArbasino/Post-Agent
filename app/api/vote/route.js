@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { Telegraf } from 'telegraf'
 import { createHash } from 'crypto'
-const { updateVote, getAllImageForVoting } = require('../../db/dbClient')
+const { updateVote, getAllImageForVoting, getVotingUser, insertVotingUser } = require('../../db/dbClient')
 const { formatTemplate } = require('../../utils/telegramNotifier')
 
 export const runtime = 'nodejs'
@@ -20,16 +20,30 @@ bot.on('callback_query', async (ctx) => {
   try {
     if (data.startsWith('vote:')) {
       const h = data.slice('vote:'.length)
+      // Prevent duplicate votes per Telegram user
+      const voterId = ctx.from?.id || ctx.callbackQuery?.from?.id
+      if (voterId) {
+        try {
+          const existing = await getVotingUser(String(voterId))
+          if (existing) {
+            await ctx.answerCbQuery('Hai già votato', { show_alert: true })
+            return
+          }
+        } catch {}
+      }
       const images = await getAllImageForVoting()
       const match = images.find((it) => shortHash(it.image_url) === h)
       if (!match) {
         await ctx.answerCbQuery('Elemento non trovato', { show_alert: true })
         return
       }
+      if (voterId) {
+        await insertVotingUser(String(voterId))
+      }
       const updated = await updateVote(match.image_url)
-      await ctx.answerCbQuery(`Voto registrato (#${updated?.votes ?? ''})`)
+      await ctx.answerCbQuery(`Voto registrato (#${updated?.votes ?? ''})`, { show_alert: true })
     } else {
-      await ctx.answerCbQuery('Azione non riconosciuta')
+      await ctx.answerCbQuery('Azione non riconosciuta', { show_alert: true })
     }
   } catch (e) {
     try { await ctx.answerCbQuery('Errore', { show_alert: true }) } catch {}

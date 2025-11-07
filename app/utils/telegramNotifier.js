@@ -126,6 +126,36 @@ async function sendTelegramNotification({ status, imageUrl, caption, originalPro
     }
 }
 
+async function editMessageToPlainText({ messageId, template, topicId }) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+
+  if (!token || !chatId) throw new Error('TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured');
+  if (!messageId && messageId !== 0) throw new Error('messageId is required');
+
+  const res = await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: Number(messageId) || messageId,
+      text: template,
+      reply_markup: null,
+      disable_web_page_preview: true,
+      message_thread_id: topicId,
+    }),
+  })
+  if (!res.ok) {
+    const txt = await res.text()
+    throw new Error(`Telegram editMessageText failed: ${res.status} ${txt}`)
+  }
+  const data = await res.json().catch(() => ({}))
+  if (data && data.ok === false) {
+    throw new Error(`Telegram editMessageText failed: ${data.description || 'unknown error'}`)
+  }
+  return data
+}
+
 async function sendWinnerNotification({ photoUrl,permalink, parseMode }) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
@@ -246,5 +276,6 @@ module.exports = {
   sendTelegramNotification,
   sendMessageWithInlineKeyboard,
   sendWinnerNotification,
-  formatTemplate
+  formatTemplate,
+  editMessageToPlainText
 };
