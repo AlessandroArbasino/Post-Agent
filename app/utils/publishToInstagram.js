@@ -65,6 +65,40 @@ const publishToInstagram = async (imageUrl, caption = '', isInstagramStories = f
         if (permalink) console.log(`🔗 Permalink: ${permalink}`);
         return { success: true, mode: 'executed', creationId, mediaId, permalink, message: 'Instagram post published successfully' };
 };
+
+const publishCarouselToInstagram = async (secondImageUrl, caption = '') => {
+    const graphVersion = process.env.INSTAGRAM_GRAPH_VERSION || 'v21.0';
+    let instagramConfig = null;
+
+    if (process.env.DATABASE_URL) {
+        instagramConfig = await getInstagramConfig();
+    } else {
+        instagramConfig = {
+            token: process.env.INSTAGRAM_ACCESS_TOKEN,
+            createdate: new Date().toISOString()
+        };
+    }
+
+    const thresholdDays = parseInt(process.env.DAYS_BETWEEN_TOKEN_REFRESH || '55', 10);
+    if (instagramConfig?.createdate) {
+        const last = new Date(instagramConfig.createdate);
+        const diffDays = (Date.now() - last.getTime()) / 86400000;
+        if (diffDays >= thresholdDays) {
+            const refreshResult = await manageLongLiveToken(instagramConfig.token);
+            if (!refreshResult?.success) {
+                throw new Error(`Token refresh failed: ${refreshResult?.error || 'unknown'}`);
+            }
+            instagramConfig = await getInstagramConfig();
+        }
+    }
+
+    const token = instagramConfig.token;
+    const igUserId = process.env.IG_USER_ID;
+    const defaultImageUrl = process.env.INSTAGRAM_DEFAULT_WINNING_IMAGE_URL;
+
+    const { creationId, mediaId, permalink } = await manageCarouselPublish(token, igUserId, graphVersion, [defaultImageUrl, secondImageUrl], caption);
+    return { success: true, mode: 'executed', creationId, mediaId, permalink, message: 'Instagram carousel published successfully' };
+};
 const managePublish = async(token, igUserId, graphVersion, imageUrl, caption, isInstagramStories = false) => {
     // Step 1: Create media container
     const createMediaResponse = await fetch(
@@ -142,6 +176,102 @@ const managePublish = async(token, igUserId, graphVersion, imageUrl, caption, is
     return { creationId, mediaId, permalink };
 }
 
+const createInstagramMedia = async (token, igUserId, graphVersion, url) => {
+    const res = await fetch(
+        `https://graph.facebook.com/${graphVersion}/${igUserId}/media`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                image_url: url,
+                is_carousel_item: true,
+                access_token: token
+            })
+        }
+    );
+    if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(`Carousel child creation error: ${txt}`);
+    }
+    const json = await res.json();
+    if (!json?.id) {
+        throw new Error('Invalid Instagram response: missing child creation id');
+    }
+    return json.id;
+}
+
+const manageCarouselPublish = async (token, igUserId, graphVersion, imageUrls, caption = '') => {
+    const childrenIds = [];
+    for (const url of imageUrls) {
+        const id = await createInstagramMedia(token, igUserId, graphVersion, url);
+        childrenIds.push(id);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    const createCarouselRes = await fetch(
+        `https://graph.facebook.com/${graphVersion}/${igUserId}/media`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                media_type: 'CAROUSEL',
+                children: childrenIds,
+                caption: caption || '',
+                access_token: token
+            })
+        }
+    );
+    if (!createCarouselRes.ok) {
+        const txt = await createCarouselRes.text();
+        throw new Error(`Carousel creation error: ${txt}`);
+    }
+    const createCarouselJson = await createCarouselRes.json();
+    const creationId = createCarouselJson.id;
+    if (!creationId) {
+        throw new Error('Invalid Instagram response: missing carousel creation id');
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    const publishRes = await fetch(
+        `https://graph.facebook.com/${graphVersion}/${igUserId}/media_publish`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                creation_id: creationId,
+                access_token: token
+            })
+        }
+    );
+    if (!publishRes.ok) {
+        const txt = await publishRes.text();
+        throw new Error(`Publishing error: ${txt}`);
+    }
+    const publishJson = await publishRes.json();
+    const mediaId = publishJson.id;
+
+    let permalink = null;
+    try {
+        const permalinkRes = await fetch(
+            `https://graph.facebook.com/${graphVersion}/${mediaId}?fields=permalink&access_token=${token}`,
+            { method: 'GET' }
+        );
+        if (permalinkRes.ok) {
+            const p = await permalinkRes.json();
+            permalink = p?.permalink || null;
+        } else {
+            const txt = await permalinkRes.text();
+            console.warn(`⚠️ Unable to obtain permalink: ${txt}`);
+        }
+    } catch (e) {
+        console.warn(`⚠️ Permalink request error: ${e?.message || e}`);
+    }
+
+    return { creationId, mediaId, permalink };
+};
+
 const fetchInstagramMetrics = async(mediaId) => {
   const graphVersion = process.env.IG_GRAPH_VERSION
   let instagramConfig = null;
@@ -170,5 +300,6 @@ const fetchInstagramMetrics = async(mediaId) => {
 
 module.exports = {
     publishToInstagram,
+    publishCarouselToInstagram,
     fetchInstagramMetrics
 };

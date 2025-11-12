@@ -1,6 +1,6 @@
 const { sendMessageWithInlineKeyboard, sendWinnerNotification, editMessageToPlainText, editMediaCaption, deleteMessageById} = require('./telegramNotifier')
 const { getAllImageFolders, deleteAllVotingImages, deleteAllVotingUsers, getTelegramMessage , insertTelegramMessage, deleteTelegramMessage} = require('../db/dbClient')
-const { publishToInstagram } = require('./publishToInstagram')
+const { publishToInstagram, publishCarouselToInstagram } = require('./publishToInstagram')
 const { deleteFolder } = require('./uploadToCloudinary')
 const { getBestPhoto } = require('./scoring')
 const crypto = require('crypto')
@@ -38,7 +38,9 @@ const publishWinner = async(topicId) => {
   if (!top) {
     return { error: 'No images available to publish', status: 404 }
   }
-
+  //Publish the presentation image as Instagram Story to announce the winner
+  await publishToInstagram(process.env.INSTAGRAM_DEFAULT_WINNING_IMAGE_URL, '', true)
+  //Publish the winner image as Instagram Story
   const publishResult = await publishToInstagram(top.image_url, '', true)
 
   await sendWinnerNotification({ photoUrl: top.image_url, permalink: publishResult.permalink, parseMode: undefined, topicId })
@@ -64,7 +66,9 @@ const publishWinner = async(topicId) => {
   if (keyboard) {
     await deleteMessageById({telegramMessageId: keyboard.telegram_message_id})
   }
-  
+  //Publish the winner image as Instagram Carousel
+  await publishCarouselToInstagram(top.image_url, '')
+
   if(process.env.DATABASE_URL) {
     await deleteAllVotingImages()
     await deleteAllVotingUsers()
