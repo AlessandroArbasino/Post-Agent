@@ -6,6 +6,7 @@
 
 const {markAllSentNow} = require('../db/dbClient')
 const {labeledImageUrl} = require('./uploadToCloudinary')
+const {insertTelegramMessage} = require('../db/dbClient')
 /**
  * Replaces {0},{1},{2},{3} in the template with provided values
  * @param {string} template
@@ -126,6 +127,31 @@ async function sendTelegramNotification({ status, imageUrl, caption, originalPro
     }
 }
 
+async function deleteMessageById({ telegramMessageId }) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) throw new Error('TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured');
+  if (!telegramMessageId && telegramMessageId !== 0) throw new Error('telegramMessageId is required');
+
+  const res = await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: Number(telegramMessageId) || telegramMessageId,
+    }),
+  })
+  if (!res.ok) {
+    const txt = await res.text()
+    throw new Error(`Telegram deleteMessage failed: ${res.status} ${txt}`)
+  }
+  const data = await res.json().catch(() => ({}))
+  if (data && data.ok === false) {
+    throw new Error(`Telegram deleteMessage failed: ${data.description || 'unknown error'}`)
+  }
+  return data
+}
+
 async function editMessageToPlainText({ telegramMessageId, template }) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
@@ -172,6 +198,37 @@ async function sendWinnerNotification({ photoUrl,permalink, parseMode, topicId }
 }
 
 /**
+ * Edit the caption of a media message (photo/video) by message id.
+ * Use this for messages sent via sendPhoto/sendMediaGroup items.
+ */
+async function editMediaCaption({ telegramMessageId, caption, parseMode }) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) throw new Error('TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured');
+  if (!telegramMessageId && telegramMessageId !== 0) throw new Error('telegramMessageId is required');
+
+  const res = await fetch(`https://api.telegram.org/bot${token}/editMessageCaption`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: Number(telegramMessageId) || telegramMessageId,
+      caption,
+      ...(parseMode ? { parse_mode: parseMode } : {}),
+    }),
+  })
+  if (!res.ok) {
+    const txt = await res.text()
+    throw new Error(`Telegram editMessageCaption failed: ${res.status} ${txt}`)
+  }
+  const data = await res.json().catch(() => ({}))
+  if (data && data.ok === false) {
+    throw new Error(`Telegram editMessageCaption failed: ${data.description || 'unknown error'}`)
+  }
+  return data
+}
+
+/**
  * Send annotated media groups and a follow-up inline keyboard message.
  * Marks all images as sent afterwards.
  * @param {string[]} urls - Array of image URLs to display in groups
@@ -180,13 +237,21 @@ async function sendWinnerNotification({ photoUrl,permalink, parseMode, topicId }
  */
 async function sendMessageWithInlineKeyboard(urls, rows, topicId) {
   const header = process.env.TELEGRAM_GROUP_IMAGE_HEADER
-  await sendAnnotatedMediaGroupsWithOptionalHeader(urls, header, topicId)
+  const mediaMessageId = await sendAnnotatedMediaGroupsWithOptionalHeader(urls, header, topicId)
+  console.log('Media message ID:', mediaMessageId)
+  if (mediaMessageId && process.env.DATABASE_URL) {
+    await insertTelegramMessage(String(mediaMessageId), 'voting_media') 
+  }
 
   const text = process.env.TELEGRAM_KEYBOARD_HEADER
-  const result = await sendInlineKeyboard(text, rows, topicId)
+  const inlineKeyboradMessageId = await sendInlineKeyboard(text, rows, topicId)
+  console.log('Inline keyboard message ID:', inlineKeyboradMessageId)
+  if (inlineKeyboradMessageId && process.env.DATABASE_URL) {
+    await insertTelegramMessage(String(inlineKeyboradMessageId), 'voting_keyboard') 
+  }
   
   await markAllSentNow()
-  return result
+  return { mediaMessageId, inlineKeyboradMessageId }
 }
 
 /**
@@ -215,7 +280,8 @@ async function sendInlineKeyboard(text, rows, topicId) {
     const txt = await res.text()
     throw new Error(`Telegram sendMessage failed: ${res.status} ${txt}`)
   }
-  return res.json()
+  const data = await res.json().catch(() => ({}))
+  return data?.result?.message_id ?? data?.message_id ?? null
 }
 
 
@@ -224,7 +290,7 @@ async function sendInlineKeyboard(text, rows, topicId) {
  * Labels each image with an incremental number using Cloudinary transformation.
  * @param {string[]} urls - Array of image URLs
  * @param {string} [headerText] - Optional caption for the first image of the first group
- * @returns {Promise<void>}
+ * @returns {Promise<number|null>} - message_id of the first media message sent (first group's first item)
  */
 async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText, topicId) {
   if (!urls || urls.length === 0) throw new Error('No images to send')
@@ -241,6 +307,7 @@ async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText, topi
   const groups = chunk(urls, 10)
 
   let globalIndex = 0
+  let firstMediaMessageId = null
   for (let gi = 0; gi < groups.length; gi++) {
     const g = groups[gi]
     const media = []
@@ -257,19 +324,24 @@ async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText, topi
       media[0].caption = headerText
       media[0].parse_mode = 'HTML'
     }
-
     const resp = await fetch(`https://api.telegram.org/bot${token}/sendMediaGroup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: chatId, media, message_thread_id: topicId }),
     })
 
+    
     if (!resp.ok) {
       const txt = await resp.text()
       throw new Error(`Telegram sendMediaGroup (annotated) failed: ${resp.status} ${txt}`)
     }
-    await resp.json()
+    const data = await resp.json().catch(() => ({}))
+    // sendMediaGroup returns an ARRAY of messages in data.result
+    if (firstMediaMessageId == null && Array.isArray(data?.result) && data.result.length > 0) {
+      firstMediaMessageId = data.result[0]?.message_id ?? null
+    }
   }
+  return firstMediaMessageId
 }
 
 module.exports = {
@@ -277,5 +349,7 @@ module.exports = {
   sendMessageWithInlineKeyboard,
   sendWinnerNotification,
   formatTemplate,
-  editMessageToPlainText
+  editMessageToPlainText,
+  deleteMessageById,
+  editMediaCaption
 };

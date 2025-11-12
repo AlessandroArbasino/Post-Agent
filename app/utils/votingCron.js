@@ -1,4 +1,4 @@
-const { sendMessageWithInlineKeyboard, sendWinnerNotification, editMessageToPlainText } = require('./telegramNotifier')
+const { sendMessageWithInlineKeyboard, sendWinnerNotification, editMessageToPlainText, editMediaCaption, deleteMessageById} = require('./telegramNotifier')
 const { getAllImageFolders, deleteAllVotingImages, deleteAllVotingUsers, getTelegramMessage , insertTelegramMessage, deleteTelegramMessage} = require('../db/dbClient')
 const { publishToInstagram } = require('./publishToInstagram')
 const { deleteFolder } = require('./uploadToCloudinary')
@@ -23,16 +23,9 @@ const votingCron = async(images, topicId) => {
 
   const imageurls = images.map((u) => u.image_url)
 
-  let telegramMessageId = undefined
-  if (rows.length > 0) {
-    const res = await sendMessageWithInlineKeyboard(imageurls, rows, topicId)
-    telegramMessageId = res?.result?.message_id ?? res?.message_id
-    if (telegramMessageId && process.env.DATABASE_URL) {
-      await insertTelegramMessage(String(telegramMessageId), 'voting_keyboard') 
-    }
-  }
+  await sendMessageWithInlineKeyboard(imageurls, rows, topicId)
 
-  return { total: images.length, sent_buttons: rows.length, telegram_message_id: telegramMessageId }
+  return { total: images.length, sent_buttons: rows.length }
 }
 
 /**
@@ -62,14 +55,20 @@ const publishWinner = async(topicId) => {
     }
   }
 
-  const message = await getTelegramMessage('voting_keyboard')
-  if (message) {
-    await editMessageToPlainText({ telegramMessageId: message.telegram_message_id, template: process.env.END_VOTING_TEMPLATE })
+  const votingMedia = await getTelegramMessage('voting_media')
+  if (votingMedia) {
+    await editMediaCaption({ telegramMessageId: votingMedia.telegram_message_id, caption: process.env.END_VOTING_TEMPLATE, parseMode: 'HTML' })
+  }
+
+  const keyboard = await getTelegramMessage('voting_keyboard')
+  if (keyboard) {
+    await deleteMessageById({telegramMessageId: keyboard.telegram_message_id})
   }
   
   if(process.env.DATABASE_URL) {
     await deleteAllVotingImages()
     await deleteAllVotingUsers()
+    await deleteTelegramMessage('voting_media')
     await deleteTelegramMessage('voting_keyboard')
   }
 
