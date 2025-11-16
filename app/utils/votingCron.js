@@ -1,8 +1,9 @@
 const { sendMessageWithInlineKeyboard, sendWinnerNotification, editMessageToPlainText, editMediaCaption, deleteMessageById} = require('./telegramNotifier')
 const { getAllImageFolders, deleteAllVotingImages, deleteAllVotingUsers, getTelegramMessage , insertTelegramMessage, deleteTelegramMessage} = require('../db/dbClient')
-const { publishToInstagram, publishCarouselToInstagram } = require('./publishToInstagram')
+const { publishToInstagram, publishCarouselToInstagram, } = require('./publishToInstagram')
 const { deleteFolder } = require('./uploadToCloudinary')
 const { getBestPhoto } = require('./scoring')
+const { generateInstagramCaption } = require('./refinePrompt')
 const crypto = require('crypto')
 
 /**
@@ -44,7 +45,22 @@ const publishWinner = async(topicId) => {
   //Publish the winner image as Instagram Story
   const publishResult = await publishToInstagram({url : top.image_url, caption : '', mediaType : 'STORIES'})
 
+const caption =  generateInstagramCaption({refinedPrompt: process.env.WINNING_CAROUSEL_CAPTION_TEMPLATE,
+    maxHashtags: parseInt(process.env.CAPTION_MAX_HASHTAGS || '5', 10) });
+  //Publish the winner image as Instagram Carousel
+  await publishCarouselToInstagram({secondImageUrl : top.image_url, caption : caption})
+
   await sendWinnerNotification({ photoUrl: top.image_url, permalink: publishResult.permalink, parseMode: undefined, topicId })
+
+  const votingMedia = await getTelegramMessage('voting_media')
+  if (votingMedia) {
+    await editMediaCaption({ telegramMessageId: votingMedia.telegram_message_id, caption: process.env.END_VOTING_TEMPLATE, parseMode: 'HTML' })
+  }
+
+  const keyboard = await getTelegramMessage('voting_keyboard')
+  if (keyboard) {
+    await deleteMessageById({telegramMessageId: keyboard.telegram_message_id})
+  }
 
   if (process.env.CLOUDINARY_ENABLE_DELETE === 'true') {
     try {
@@ -57,18 +73,6 @@ const publishWinner = async(topicId) => {
       console.warn('Cloudinary bulk cleanup skipped/failed', e)
     }
   }
-
-  const votingMedia = await getTelegramMessage('voting_media')
-  if (votingMedia) {
-    await editMediaCaption({ telegramMessageId: votingMedia.telegram_message_id, caption: process.env.END_VOTING_TEMPLATE, parseMode: 'HTML' })
-  }
-
-  const keyboard = await getTelegramMessage('voting_keyboard')
-  if (keyboard) {
-    await deleteMessageById({telegramMessageId: keyboard.telegram_message_id})
-  }
-  //Publish the winner image as Instagram Carousel
-  await publishCarouselToInstagram({secondImageUrl : top.image_url, caption : ''})
 
   if(process.env.DATABASE_URL) {
     await deleteAllVotingImages()

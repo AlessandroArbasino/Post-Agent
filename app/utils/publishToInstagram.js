@@ -98,7 +98,8 @@ const manageCarouselPublish = async ({token, igUserId, graphVersion, imageUrls, 
          igUserId : igUserId,
          graphVersion : graphVersion,
          mediaType : 'CAROUSEL',
-         childrenIds : childrenIds});
+         childrenIds : childrenIds,
+         caption : caption});
 
     await pollCreationStatus({token : token,
         graphVersion : graphVersion,
