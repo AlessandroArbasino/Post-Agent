@@ -7,15 +7,17 @@ const { getGeminiClient } = require('./geminiClient');
 const { findEnvVariable } = require('./envUtils');
 
 const getPromptFromDefault = async ({ } = {}) => {
-    return getGeminiPrompt({});
+    const result = await getGeminiPrompt({});
+    //As the db responce
+    return {id: null,prompt: result.geminiResponse};
 };
 
 const refinePrompt = async ({prompt } = {}) => {
-    return getGeminiPrompt({prompt});
+    return getGeminiPrompt({prompt:prompt});
 };
 
 const generateInstagramCaption = async ({refinedPrompt, maxHashtags } = {}) => {
-    return getGeminiPrompt({refinedPrompt, maxHashtags});
+    return getGeminiPrompt({prompt: refinedPrompt, maxHashtags:maxHashtags});
 };
 
 const getGeminiPrompt = async ({prompt=null, maxHashtags = null} = {}) => {

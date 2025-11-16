@@ -22,7 +22,7 @@ const instagramCalculateRefreshToken = async (instagramConfig) => {
     return instagramConfig;
 };
 
-const createInstagramMedia = async ({token, igUserId, graphVersion, url, isCarouselItem = false,mediaType = null,childrenIds = null,isVideo = false}) => {
+const createInstagramMedia = async ({token, igUserId, graphVersion, url, caption, isCarouselItem = false,mediaType = null,childrenIds = null,isVideo = false}) => {
     const res = await fetch(
         `https://graph.facebook.com/${graphVersion}/${igUserId}/media`,
         {
@@ -30,7 +30,8 @@ const createInstagramMedia = async ({token, igUserId, graphVersion, url, isCarou
             headers: { 'Content-Type': 'application/json' },
              body: JSON.stringify((() => {
                 const payload = {
-                    access_token: token
+                    access_token: token,
+                    caption: caption || '',
                 };
                 if (mediaType) {
                     payload.media_type = mediaType;
@@ -62,7 +63,7 @@ const createInstagramMedia = async ({token, igUserId, graphVersion, url, isCarou
     return json.id;
 }
 
-const publishInstagramMedia = async ({token, igUserId, graphVersion, creationId,caption,postToShareId = null}) => {
+const publishInstagramMedia = async ({token, igUserId, graphVersion, creationId,postToShareId = null}) => {
     const res = await fetch(
         `https://graph.facebook.com/${graphVersion}/${igUserId}/media_publish`,
         {
@@ -71,7 +72,6 @@ const publishInstagramMedia = async ({token, igUserId, graphVersion, creationId,
             body:JSON.stringify((() => {
                 const payload = {
                     creation_id: creationId,
-                    caption: caption,
                     access_token: token
                 };
                 if (postToShareId) {

@@ -57,6 +57,7 @@ const managePublish = async({token, igUserId, graphVersion, url, caption, postTo
         igUserId : igUserId, 
         graphVersion : graphVersion, 
         url : url, 
+        caption : caption,
         isCarouselItem : false, 
         mediaType : mediaType, 
         childrenIds : null,
@@ -71,7 +72,6 @@ const managePublish = async({token, igUserId, graphVersion, url, caption, postTo
          igUserId : igUserId,
          graphVersion : graphVersion,
          creationId : creationId,
-         caption : caption,
          postToShareId : postToShareId});
 
     // Step 3: Retrieve permalink of published media
