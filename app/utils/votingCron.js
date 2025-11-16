@@ -23,6 +23,7 @@ const votingCron = async(images, topicId) => {
 
   const imageurls = images.map((u) => u.image_url)
 
+  await publishToInstagram({url : process.env.INSTAGRAM_DEFAULT_START_VOTING_STORY_URL, caption : '', mediaType : 'STORIES',isVideo : true})
   await sendMessageWithInlineKeyboard(imageurls, rows, topicId)
 
   return { total: images.length, sent_buttons: rows.length }
@@ -39,9 +40,9 @@ const publishWinner = async(topicId) => {
     return { error: 'No images available to publish', status: 404 }
   }
   //Publish the presentation image as Instagram Story to announce the winner
-  await publishToInstagram(process.env.INSTAGRAM_DEFAULT_WINNING_IMAGE_URL, '', true)
+  await publishToInstagram({url : process.env.INSTAGRAM_DEFAULT_WINNING_IMAGE_URL, caption : '', mediaType : 'STORIES'})
   //Publish the winner image as Instagram Story
-  const publishResult = await publishToInstagram(top.image_url, '', true)
+  const publishResult = await publishToInstagram({url : top.image_url, caption : '', mediaType : 'STORIES'})
 
   await sendWinnerNotification({ photoUrl: top.image_url, permalink: publishResult.permalink, parseMode: undefined, topicId })
 
@@ -67,7 +68,7 @@ const publishWinner = async(topicId) => {
     await deleteMessageById({telegramMessageId: keyboard.telegram_message_id})
   }
   //Publish the winner image as Instagram Carousel
-  await publishCarouselToInstagram(top.image_url, '')
+  await publishCarouselToInstagram({secondImageUrl : top.image_url, caption : ''})
 
   if(process.env.DATABASE_URL) {
     await deleteAllVotingImages()

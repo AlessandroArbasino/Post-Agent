@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 const {installGlobalErrorHandlers, withErrorReporting} = require('../../utils/errorMiddleware')
+const { setPageName } = require('../../utils/envUtils');
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -33,6 +34,7 @@ async function handler() {
     for (let i = 0; i < dailyPostCount; i++) {
       // Esegue l'intera pipeline
       // eslint-disable-next-line no-await-in-loop
+      setPageName('');
       lastResult = await executeDailyPost(imageOptions);
     }
 

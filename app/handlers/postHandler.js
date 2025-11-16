@@ -15,7 +15,7 @@ const { sendTelegramNotification } = require('../utils/telegramNotifier');
  * @param {Object} imageOptions - Image generation options (width, height, steps, etc.)
  * @returns {Promise<Object>} - Full operation result
  */
-const executeDailyPost = async (imageOptions = {}) => {
+const executeDailyPost = async (imageOptions = {},instagramPageName='') => {
     let startTime = Date.now();
 
     console.log('\n' + '='.repeat(70));
@@ -40,13 +40,13 @@ const executeDailyPost = async (imageOptions = {}) => {
         console.log(`   Original prompt: "${dbPrompt.prompt}"`);
 
         console.log('🤖 STEP 2: Prompt refinement with Gemini AI');
-        refineResult = await refinePrompt(dbPrompt.prompt, imageOptions.model || process.env.DEFAULT_MODEL);
+        refineResult = await refinePrompt({prompt: dbPrompt.prompt});
         
-        console.log(`   ✅ Refined prompt: "${refineResult.refined.substring(0, 80)}..."\n`);
+        console.log(`   ✅ Refined prompt: "${refineResult.geminiResponse.substring(0, 80)}..."\n`);
 
         // Step 2: Image generation with Gradio
         console.log('🎨 STEP 3: Image generation with Gradio');
-        let generateResult = await generateImageGradio(refineResult.refined, {
+        let generateResult = await generateImageGradio(refineResult.geminiResponse, {
             width: imageOptions.width,
             height: imageOptions.height,
             guidance_scale: imageOptions.cfg || 4,
@@ -74,13 +74,21 @@ const executeDailyPost = async (imageOptions = {}) => {
 
         // Step 4: Instagram caption generation with Gemini (parametric on hashtags)
         console.log('✍️  STEP 5: Generate Instagram caption');
-        let finalCaption = await generateInstagramCaption(refineResult.refined, 
-            { maxHashtags: parseInt(process.env.CAPTION_MAX_HASHTAGS || '5', 10), 
-                model: process.env.DEFAULT_MODEL });
+        let finalCaption = await generateInstagramCaption({refinedPrompt: refineResult.geminiResponse,
+            maxHashtags: parseInt(process.env.CAPTION_MAX_HASHTAGS || '5', 10) });
 
         // Step 5: Publish to Instagram (function handles refresh+retry if needed)
         console.log('📱 STEP 6: Publish to Instagram');
-        let instagramResult = await publishToInstagram(publicImageUrl, finalCaption.caption,false);
+        let instagramResult = await publishToInstagram({
+            url : publicImageUrl,
+            caption : finalCaption.geminiResponse});
+
+        // Step 6: Share to Instagram Stories until i discover a way to do it currently seems not allowed
+        /*let shareInstagramResult = await publishToInstagram({
+            url : process.env.INSTAGRAM_DEFAULT_WINNING_IMAGE_URL,
+            caption : '',
+            postToShareId : instagramResult.mediaId,
+            mediaType : 'STORIES'});*/
 
         let executionTime = ((Date.now() - startTime) / 1000).toFixed(2);
         
@@ -88,7 +96,7 @@ const executeDailyPost = async (imageOptions = {}) => {
         console.log('✅ DAILY POST COMPLETED SUCCESSFULLY');
         console.log(`⏱️  Total execution time: ${executionTime}s`);
         console.log(`📸 Instagram Media ID: ${instagramResult.mediaId}`);
-        console.log(`🎨 Refined prompt: "${refineResult.refined.substring(0, 60)}..."`);
+        console.log(`🎨 Refined prompt: "${refineResult.geminiResponse.substring(0, 60)}..."`);
 
         // Do not remove the prompt if it was obtained from default
         if (dbPrompt?.id) {
@@ -106,9 +114,9 @@ const executeDailyPost = async (imageOptions = {}) => {
             const notifyRes = await sendTelegramNotification({
                 status: 'success',
                 imageUrl: publicImageUrl,
-                caption: finalCaption.caption,
+                caption: finalCaption.geminiResponse,
                 originalPrompt: refineResult.original,
-                refinedPrompt: refineResult.refined,
+                refinedPrompt: refineResult.geminiResponse,
                 permalink: instagramResult.permalink,
                 topicId: process.env.DAILY_PICS_THREAD_ID
             });
@@ -124,7 +132,7 @@ const executeDailyPost = async (imageOptions = {}) => {
             timestamp: new Date().toISOString(),
             executionTime: `${executionTime}s`,
             originalPrompt: refineResult.original,
-            refinedPrompt: refineResult.refined,
+            refinedPrompt: refineResult.geminiResponse,
             localImageUrl: null,
             cloudinaryUrl: publicImageUrl,
             instagramMediaId: instagramResult.mediaId,
@@ -142,7 +150,7 @@ const executeDailyPost = async (imageOptions = {}) => {
         try {
             error.context = {
                 originalPrompt: dbPrompt.prompt || "Prompt not available",
-                refinedPrompt: refineResult.refined || "Refined Prompt not available",
+                refinedPrompt: refineResult.geminiResponse || "Refined Prompt not available",
             };
             console.log('context', error.context);
         } catch (_) {}

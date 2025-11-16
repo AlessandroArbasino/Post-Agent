@@ -1,23 +1,15 @@
 /**
  * Utilities to initialize and share the Gemini client and API key
  */
-
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 let geminiClient = null;
 
 /**
- * Returns the Google API Key or empty string if missing
- */
-const getGoogleApiKey = () => {
-  return process.env.GOOGLE_API_KEY || '';
-};
-
-/**
  * Initialize and return a singleton of GoogleGenerativeAI
  */
 const initializeGeminiClient = () => {
-  const apiKey = getGoogleApiKey();
+  const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     console.warn('⚠️  GOOGLE_API_KEY not configured');
     return false;
@@ -37,7 +29,5 @@ const getGeminiClient = () => {
 };
 
 module.exports = {
-  getGoogleApiKey,
-  initializeGeminiClient,
   getGeminiClient,
 };

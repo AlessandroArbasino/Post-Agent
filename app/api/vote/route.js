@@ -26,7 +26,7 @@ bot.on('callback_query', async (ctx) => {
         try {
           const existing = await getVotingUser(String(voterId))
           if (existing) {
-            await ctx.answerCbQuery('Hai già votato', { show_alert: true })
+            await ctx.answerCbQuery('Your vote has already been registered', { show_alert: true })
             return
           }
         } catch {}
@@ -34,19 +34,19 @@ bot.on('callback_query', async (ctx) => {
       const images = await getAllImageForVoting()
       const match = images.find((it) => shortHash(it.image_url) === h)
       if (!match) {
-        await ctx.answerCbQuery('Elemento non trovato', { show_alert: true })
+        await ctx.answerCbQuery('Element not found', { show_alert: true })
         return
       }
       if (voterId) {
         await insertVotingUser(String(voterId))
       }
       const updated = await updateVote(match.image_url)
-      await ctx.answerCbQuery(`Voto registrato (#${updated?.votes ?? ''})`, { show_alert: true })
+      await ctx.answerCbQuery(`Thank you for voting!`, { show_alert: true })
     } else {
-      await ctx.answerCbQuery('Azione non riconosciuta', { show_alert: true })
+      await ctx.answerCbQuery('Something went wrong', { show_alert: true })
     }
   } catch (e) {
-    try { await ctx.answerCbQuery('Errore', { show_alert: true }) } catch {}
+    try { await ctx.answerCbQuery('Something went wrong', { show_alert: true }) } catch {}
   }
 })
 
