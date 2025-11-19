@@ -41,7 +41,7 @@ const publishWinner = async(topicId) => {
     return { error: 'No images available to publish', status: 404 }
   }
   //Publish the presentation image as Instagram Story to announce the winner
-  await publishToInstagram({url : process.env.INSTAGRAM_DEFAULT_WINNING_IMAGE_URL, caption : '', mediaType : 'STORIES'})
+  await publishToInstagram({url : process.env.INSTAGRAM_DEFAULT_END_VOTING_STORY_URL, caption : '', mediaType : 'STORIES',isVideo : true})
   //Publish the winner image as Instagram Story
   const publishResult = await publishToInstagram({url : top.image_url, caption : '', mediaType : 'STORIES'})
 
