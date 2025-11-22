@@ -107,6 +107,7 @@ const executeDailyPost = async (imageOptions = {},instagramPageName='') => {
                 instagramPostId: instagramResult.mediaId,
                 imageUrl: publicImageUrl,
                 cloudinaryFolder: cloudinaryFolder,
+                instagramCaption: finalCaption.geminiResponse
             });
         }
         // Telegram notification
@@ -115,7 +116,7 @@ const executeDailyPost = async (imageOptions = {},instagramPageName='') => {
                 status: 'success',
                 imageUrl: publicImageUrl,
                 caption: finalCaption.geminiResponse,
-                originalPrompt: refineResult.original,
+                originalPrompt: dbPrompt.prompt,
                 refinedPrompt: refineResult.geminiResponse,
                 permalink: instagramResult.permalink,
                 topicId: process.env.DAILY_PICS_THREAD_ID
@@ -131,7 +132,7 @@ const executeDailyPost = async (imageOptions = {},instagramPageName='') => {
             success: true,
             timestamp: new Date().toISOString(),
             executionTime: `${executionTime}s`,
-            originalPrompt: refineResult.original,
+            originalPrompt: dbPrompt.prompt,
             refinedPrompt: refineResult.geminiResponse,
             localImageUrl: null,
             cloudinaryUrl: publicImageUrl,

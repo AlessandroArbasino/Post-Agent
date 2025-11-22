@@ -7,37 +7,35 @@ const { getGeminiClient } = require('./geminiClient');
 const { findEnvVariable } = require('./envUtils');
 
 const getPromptFromDefault = async ({ } = {}) => {
-    const result = await getGeminiPrompt({});
+    const result = await getGeminiPrompt({instruction:findEnvVariable('PROMPT_DEFAULT_INSTRUCTION')});
     //As the db responce
     return {id: null,prompt: result.geminiResponse};
 };
 
 const refinePrompt = async ({prompt } = {}) => {
-    return getGeminiPrompt({prompt:prompt});
+    const instruction = `${findEnvVariable('PROMPT_REFINE_INSTRUCTION')} ${prompt}`
+    return getGeminiPrompt({instruction:instruction});
+};
+
+const generateSpeech = async ({prompt } = {}) => {
+    const instruction = `${findEnvVariable('VIDEO_SPEECH_PROMPT')} ${prompt}`
+    return getGeminiPrompt({instruction:instruction});
 };
 
 const generateInstagramCaption = async ({refinedPrompt, maxHashtags } = {}) => {
-    return getGeminiPrompt({prompt: refinedPrompt, maxHashtags:maxHashtags});
+    const baseInstruction = `${findEnvVariable('PROMPT_CAPTION_INSTRUCTION')} ${refinedPrompt}`;
+    const instruction = `${baseInstruction.replace('{N}', String(maxHashtags)).replace('{prompt}', baseInstruction)}`
+    return getGeminiPrompt({ instruction:instruction});
 };
 
-const getGeminiPrompt = async ({prompt=null, maxHashtags = null} = {}) => {
-    let instruction;
-    if(!prompt){
-        instruction = findEnvVariable('PROMPT_DEFAULT_INSTRUCTION');
-    }
-    else{
-       let baseInstruction = maxHashtags ? `${findEnvVariable('PROMPT_CAPTION_INSTRUCTION')} ${prompt}` : `${findEnvVariable('PROMPT_REFINE_INSTRUCTION')} ${prompt}`;
-       instruction = maxHashtags ? `${baseInstruction.replace('{N}', String(maxHashtags)).replace('{prompt}', prompt)}`: `${findEnvVariable('PROMPT_REFINE_INSTRUCTION')} ${prompt}`;
-    }
+const getGeminiPrompt = async ({instruction} = {}) => {
     const text = await geminiGenerateText({ instruction });
     const geminiResponse = (text || '').trim();
     if (!geminiResponse) {
         throw new Error('Empty response from Gemini');
     }
 
-    console.log('✅ Prompt refined successfully');
-
-     return { success: true, original: prompt, geminiResponse: geminiResponse };
+    return { success: true, geminiResponse: geminiResponse };
 };
 
 /**
@@ -69,5 +67,6 @@ getGeminiClient();
 module.exports = {
     refinePrompt,
     generateInstagramCaption,
-    getPromptFromDefault
+    getPromptFromDefault,
+    generateSpeech
 };

@@ -47,7 +47,6 @@ const withErrorReporting = (handler, options = {}) => {
     } catch (err) {
       try {
         const mod = await import('./telegramNotifier.js');
-        console.log('Telegram notification error (success path):4'); 
 
         const sendTelegramNotification = mod.sendTelegramNotification || (mod.default && mod.default.sendTelegramNotification);
         console.log('error', err); 

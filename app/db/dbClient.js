@@ -129,11 +129,11 @@ const removeCompletedPrompt = async (promptId) => {
  * @param {string} params.cloudinaryFolder
  * @returns {Promise<{id:number}>}
  */
-const insertVotingImage = async ({ instagramPostId, imageUrl, cloudinaryFolder }) => {
+const insertVotingImage = async ({ instagramPostId, imageUrl, cloudinaryFolder,instagramCaption }) => {
     try {
         const sql = await getClient();
-        const rows = await sql`INSERT INTO voting_images (instagram_post_id, image_url, cloudinary_folder, create_date)
-                               VALUES (${instagramPostId}, ${imageUrl}, ${cloudinaryFolder}, NOW())
+        const rows = await sql`INSERT INTO voting_images (instagram_post_id, image_url, cloudinary_folder, create_date, instagram_caption)
+                               VALUES (${instagramPostId}, ${imageUrl}, ${cloudinaryFolder}, NOW(),${instagramCaption})
                                RETURNING image_id`;
         const id = rows?.[0]?.image_id;
         console.log('✅ voting_images insert id:', id);
@@ -195,7 +195,7 @@ const getAllImageFolders = async () => {
 const getAllImageForVoting = async () => {
   const sql = await getClient();
   const rows = await sql`
-    select distinct(image_url), instagram_post_id, votes, sent_date
+    select distinct(image_url), instagram_post_id, votes, sent_date, instagram_caption
     from voting_images
   `
   return rows
