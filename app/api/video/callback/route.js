@@ -30,7 +30,8 @@ async function handler(request) {
     }
     console.log('[video_callback] parsed body:', body);
 
-    const videoUrl = body?.video_url;
+
+    const videoUrl = body?.event_data?.url;
     if (!videoUrl) {
       console.log('[video_callback] missing video_url in body');
       return NextResponse.json({ error: 'Missing field: video_url' }, { status: 400 });
