@@ -9,15 +9,15 @@ export async function generateVideo({backgroundUrl, backgroundAssetId,speechText
     video_inputs: [
       {
         character: {
-          type: 'talking_photo',
-          talking_photo_id: process.env.VIDEO_GENERATION_AVATAR_ID,
+          type: 'avatar',
+          avatar_id: process.env.VIDEO_GENERATION_AVATAR_ID,
           scale: 1,
           avatar_style: 'normal',
           talking_style: 'stable',
           super_resolution: false, 
           expression: 'happy',
           matting: false,
-          offset: {x: 0, y: -0.5},
+          offset: {x: -0.3, y: 0},
         },
         voice: {
           type: 'text',
@@ -42,7 +42,7 @@ export async function generateVideo({backgroundUrl, backgroundAssetId,speechText
         font_family: "Arial",
         font_size: 10,
         font_weight: "bold",
-       position: {
+        position: {
           "x": 0.5,
           "y": -0.5
         },

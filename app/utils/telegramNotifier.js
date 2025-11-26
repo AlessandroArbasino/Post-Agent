@@ -92,9 +92,9 @@ async function sendTelegramPhoto({ token, chatId, photo, caption, parseMode, top
  * @param {string} [payload.permalink] - Public link to the Instagram post
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-async function sendTelegramNotification({ status, imageUrl, caption, originalPrompt, refinedPrompt, error, permalink, topicId }) {
-    const token = process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = process.env.TELEGRAM_CHAT_ID;
+async function sendTelegramNotification({ status, imageUrl, caption, originalPrompt, refinedPrompt, error, permalink, topicId, overrideBotToken, overrideChatId }) {
+    const token = overrideBotToken || process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = overrideChatId || process.env.TELEGRAM_CHAT_ID;
     const parseMode = process.env.TELEGRAM_PARSE_MODE || undefined; // opzionale
 
     if (!token || !chatId) {
@@ -315,14 +315,15 @@ async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText, topi
     for (let i = 0; i < g.length; i++) {
       const url = g[i]
       const label = ++globalIndex
-      const transformed = url// labeledImageUrl(url, label)
+      const transformed = await labeledImageUrl(url, label)
+
+      console.log('✅ Media group created:', transformed)
       media.push({ type: 'photo', media: transformed })
     }
 
     // Header come caption sul primo elemento del PRIMO gruppo
     if (gi === 0 && headerText) {
       media[0].caption = headerText
-      media[0].parse_mode = 'HTML'
     }
     const resp = await fetch(`https://api.telegram.org/bot${token}/sendMediaGroup`, {
       method: 'POST',

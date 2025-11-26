@@ -58,7 +58,8 @@ const withErrorReporting = (handler, options = {}) => {
                 refinedPrompt: err.context?.refinedPrompt,
                 error: err.message, 
                 permalink: null,
-                topicId: process.env.ERROR_LOGS_THREAD_ID
+                overrideBotToken: process.env.ERROR_LOGS_BOT_TOKEN,
+                overrideChatId: process.env.ERROR_LOGS_CHAT_ID
           });
       } catch (_) {
         // ignore notification errors
