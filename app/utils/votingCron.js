@@ -24,7 +24,7 @@ const votingCron = async(images, topicId) => {
 
   const imageurls = images.map((u) => u.image_url)
 
-  //await publishToInstagram({url : process.env.INSTAGRAM_DEFAULT_START_VOTING_STORY_URL, caption : '', mediaType : 'STORIES',isVideo : true})
+  await publishToInstagram({url : process.env.INSTAGRAM_DEFAULT_START_VOTING_STORY_URL, caption : '', mediaType : 'STORIES',isVideo : true})
   await sendMessageWithInlineKeyboard(imageurls, rows, topicId)
 
   return { total: images.length, sent_buttons: rows.length }
