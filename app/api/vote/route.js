@@ -17,6 +17,7 @@ function shortHash(input) {
 // Handle button clicks
 bot.on('callback_query', async (ctx) => {
   const data = ctx.callbackQuery?.data || ''
+  console.log('callback_query', data)
   try {
     if (data.startsWith('vote:')) {
       const h = data.slice('vote:'.length)
