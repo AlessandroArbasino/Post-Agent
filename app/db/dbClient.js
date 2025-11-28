@@ -265,9 +265,14 @@ const getVotingUser = async (telegramUserId) => {
   return rows[0]
 }
 
-const insertVotingUser = async (telegramUserId,imageUrl) => {
+const updateVotingUser = async (telegramUserId,votedImageNumber) => {
   const sql = await getClient();
-  await sql`insert into voting_users (telegram_user_id,voted_image_url) values (${telegramUserId},${imageUrl})`
+  await sql`update voting_users set voted_image_number = ${votedImageNumber} where telegram_user_id = ${telegramUserId}`
+}
+
+const insertVotingUser = async (telegramUserId,votedImageNumber) => {
+  const sql = await getClient();
+  await sql`insert into voting_users (telegram_user_id,voted_image_number) values (${telegramUserId},${votedImageNumber})`
 }
 
 const deleteAllVotingUsers = async () => {
@@ -292,6 +297,7 @@ module.exports = {
     getTelegramMessage,
     deleteTelegramMessage,
     getVotingUser,
+    updateVotingUser,
     insertVotingUser,
     deleteAllVotingUsers,
     insertVotingNumber
