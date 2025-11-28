@@ -34,10 +34,14 @@ bot.on('callback_query', async (ctx) => {
           const existing = await getVotingUser(String(voterId))
           if (existing) {
             const previosVotingImage = images.find((it) => it.voting_number === existing.voted_image_number);
+            if(previosVotingImage.voting_number !== match.voting_number){
             await updateVote(previosVotingImage.image_url, -1);
             await updateVotingUser(String(voterId),match.voting_number);
             await updateVote(match.image_url, 1)
-            await ctx.answerCbQuery('Your vote has changed from image number  ' + previosVotingImage.voting_number + ' to image number ' + match.voting_number, { show_alert: true })
+            await ctx.answerCbQuery('Your vote has changed from image number ' + previosVotingImage.voting_number + ' to image number ' + match.voting_number, { show_alert: true })
+            }else{
+              await ctx.answerCbQuery('You have already voted for this image', { show_alert: true })
+            }
           }else{
             await insertVotingUser(String(voterId),match.voting_number);
             await updateVote(match.image_url, 1)
