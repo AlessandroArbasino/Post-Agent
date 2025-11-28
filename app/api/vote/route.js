@@ -22,31 +22,30 @@ bot.on('callback_query', async (ctx) => {
       const h = data.slice('vote:'.length)
       // Prevent duplicate votes per Telegram user
       const voterId = ctx.from?.id || ctx.callbackQuery?.from?.id
-      if (voterId) {
-        try {
-          const existing = await getVotingUser(String(voterId))
-          if (existing) {
-            await ctx.answerCbQuery('Your vote has already been registered', { show_alert: true })
-            return
-          }
-        } catch {}
-      }
+      
       const images = await getAllImageForVoting()
       const match = images.find((it) => shortHash(it.image_url) === h)
+
       if (!match) {
         await ctx.answerCbQuery('Element not found', { show_alert: true })
         return
       }
       if (voterId) {
-        await insertVotingUser(String(voterId))
+          const existing = await getVotingUser(String(voterId))
+          if (existing) {
+            await updateVote(existing.voted_image,false);
+            await ctx.answerCbQuery('Your vote has changed from ' + existing.voting_number + ' to ' + match.voting_number, { show_alert: true })
+          }else{
+            await insertVotingUser(String(voterId))
+            await ctx.answerCbQuery(`Thank you for voting image ${match.image_url}!`, { show_alert: true })
+          }
+          await updateVote(match.image_url,true)
       }
-      const updated = await updateVote(match.image_url)
-      await ctx.answerCbQuery(`Thank you for voting!`, { show_alert: true })
-    } else {
+    }else{
       await ctx.answerCbQuery('Something went wrong', { show_alert: true })
     }
   } catch (e) {
-    try { await ctx.answerCbQuery('Something went wrong', { show_alert: true }) } catch {}
+    await ctx.answerCbQuery('Something went wrong', { show_alert: true })
   }
 })
 

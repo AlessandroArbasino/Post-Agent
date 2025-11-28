@@ -129,7 +129,7 @@ const removeCompletedPrompt = async (promptId) => {
  * @param {string} params.cloudinaryFolder
  * @returns {Promise<{id:number}>}
  */
-const insertVotingImage = async ({ instagramPostId, imageUrl, cloudinaryFolder,instagramCaption }) => {
+const insertVotingImage = async ({ instagramPostId, imageUrl, cloudinaryFolder,instagramCaption,votingNumber }) => {
     try {
         const sql = await getClient();
         const rows = await sql`INSERT INTO voting_images (instagram_post_id, image_url, cloudinary_folder, create_date, instagram_caption)
@@ -143,22 +143,42 @@ const insertVotingImage = async ({ instagramPostId, imageUrl, cloudinaryFolder,i
     }
 };
 
+const insertVotingNumber = async ({ votingNumber,imageUrl }) => {
+    try {
+        const sql = await getClient();
+        const rows = await sql`UPDATE voting_images
+                              set voting_number = ${votingNumber}
+                              where image_url = ${imageUrl}`;
+    } catch (error) {
+        throw error;
+    }
+};
+
 /**
  * Increment vote count for an image URL (creates row if missing).
  * @param {string} url - Image URL used as unique key
  * @returns {Promise<{image_url:string, votes:number}>}
  */
-const updateVote = async (url) => {
+/**
+ * Aggiorna il conteggio dei voti per un'immagine
+ * @param {string} url - L'URL dell'immagine
+ * @param {boolean} [increment=true] - Se true aggiunge un voto, se false lo sottrae
+ * @returns {Promise<Object>} L'oggetto contenente l'URL dell'immagine e il nuovo conteggio dei voti
+ */
+const updateVote = async (url, increment = true) => {
   const sql = await getClient();
+  const voteChange = increment ? 1 : -1;
+  
   const result = await sql`
     insert into voting_images (image_url, votes)
-    values (${url}, 0)
+    values (${url}, ${voteChange})
     on conflict (image_url)
-    do update set votes = voting_images.votes + 1
+    do update set votes = voting_images.votes + ${voteChange}
     returning image_url, votes
   `
   return result[0]
 }
+
 
 /**
  * Get the image with the highest vote count.
@@ -195,7 +215,7 @@ const getAllImageFolders = async () => {
 const getAllImageForVoting = async () => {
   const sql = await getClient();
   const rows = await sql`
-    select distinct(image_url), instagram_post_id, votes, sent_date, instagram_caption
+    select distinct(image_url), instagram_post_id, votes, sent_date, instagram_caption,voting_number
     from voting_images
   `
   return rows

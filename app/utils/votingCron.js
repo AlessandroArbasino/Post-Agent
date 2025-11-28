@@ -4,6 +4,7 @@ const { publishToInstagram, publishCarouselToInstagram, } = require('./publishTo
 const { deleteFolder } = require('./uploadToCloudinary')
 const { getBestPhoto } = require('./scoring')
 const { generateInstagramCaption } = require('./refinePrompt')
+const { insertVotingNumber } = require('../db/dbClient')
 const crypto = require('crypto')
 
 /**
@@ -15,14 +16,22 @@ const crypto = require('crypto')
 const votingCron = async(images, topicId) => {
   const shortHash = (s) => crypto.createHash('sha1').update(String(s)).digest('hex').slice(0, 12)
 
-  const rows = images.map((u, i) => [
-    {
-      text: `Vota #${i + 1}`,
+  // Process each image to create voting buttons and update voting numbers
+  const rows = await Promise.all(images.map(async (u, i) => {
+    const votingNumber = i + 1;
+    // Update voting number in the database
+    await insertVotingNumber({ 
+      votingNumber : votingNumber || 0, 
+      imageUrl: u.image_url 
+    });
+    
+    return [{
+      text: `Vota #${votingNumber}`,
       callback_data: `vote:${shortHash(u.image_url)}`,
-    },
-  ])
+    }];
+  }));
 
-  const imageurls = images.map((u) => u.image_url)
+  const imageurls = images.map((u) => u.image_url);
 
   await publishToInstagram({url : process.env.INSTAGRAM_DEFAULT_START_VOTING_STORY_URL, caption : '', mediaType : 'STORIES',isVideo : true})
   await sendMessageWithInlineKeyboard(imageurls, rows, topicId)
