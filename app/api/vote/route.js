@@ -36,10 +36,14 @@ bot.on('callback_query', async (ctx) => {
       if (voterId) {
           const existing = await getVotingUser(String(voterId))
           if (existing) {
-            const previosVotingImage = images.find((it) => shortHash(existing.voting_number) === existing.voted_image_number)
+            const previosVotingImage = images.find((it) => shortHash(it.voting_number) === existing.voted_image_number);
+            console.log('previosVotingImage:', previosVotingImage)
             await updateVote(previosVotingImage.image_url, -1);
+            console.log('update vote negative:', previosVotingImage.image_url)
             await updateVotingUser(String(voterId),match.voting_number);
+            console.log('update voting user:', String(voterId))
             await updateVote(match.image_url, 1)
+            console.log('update vote positive:', match.image_url)
             await ctx.answerCbQuery('Your vote has changed from ' + existing.voting_number + ' to ' + match.voting_number, { show_alert: true })
           }else{
             await insertVotingUser(String(voterId),match.voting_number);
