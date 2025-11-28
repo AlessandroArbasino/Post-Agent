@@ -21,8 +21,10 @@ bot.on('callback_query', async (ctx) => {
   try {
     if (data.startsWith('vote:')) {
       const h = data.slice('vote:'.length)
+      console.log('imageUrl:', h)
       // Prevent duplicate votes per Telegram user
       const voterId = ctx.from?.id || ctx.callbackQuery?.from?.id
+      console.log('voterId:', voterId)
       
       const images = await getAllImageForVoting()
       const match = images.find((it) => shortHash(it.image_url) === h)
