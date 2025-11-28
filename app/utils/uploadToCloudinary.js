@@ -106,7 +106,6 @@ const labeledImageUrl = async (url, label, opts = {}) => {
   });
 
   const uploadResult = await uploadToCloudinary(urlTransformed, { folder: 'annotated', publicId: label });
-  console.log('✅ Cloudinary upload completed:', uploadResult);
 
   return uploadResult.publicUrl;
 }

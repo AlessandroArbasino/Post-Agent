@@ -92,7 +92,7 @@ async function sendTelegramPhoto({ token, chatId, photo, caption, parseMode, top
  * @param {string} [payload.permalink] - Public link to the Instagram post
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-async function sendTelegramNotification({ status, imageUrl, caption, originalPrompt, refinedPrompt, error, permalink, topicId, overrideBotToken, overrideChatId }) {
+async function sendTelegramNotification({ status, imageUrl, originalPrompt, error, permalink, topicId, overrideBotToken, overrideChatId }) {
     const token = overrideBotToken || process.env.TELEGRAM_BOT_TOKEN;
     const chatId = overrideChatId || process.env.TELEGRAM_CHAT_ID;
     const parseMode = process.env.TELEGRAM_PARSE_MODE || undefined; // opzionale
@@ -102,12 +102,12 @@ async function sendTelegramNotification({ status, imageUrl, caption, originalPro
     }
 
     // Recupero template da .env
-    const successTpl = process.env.TELEGRAM_SUCCESS_TEMPLATE || 'Pipeline OK\nOriginal: {0}\nRefined: {1}\nCaption: {2}\nLink: {3}';
-    const failureTpl = process.env.TELEGRAM_FAILURE_TEMPLATE || 'Pipeline KO\nOriginal: {0}\nRefined: {1}\nError: {2}\n';
+    const successTpl = process.env.TELEGRAM_SUCCESS_TEMPLATE || 'Pipeline OK\nOriginal: {0}\nLink: {1}';
+    const failureTpl = process.env.TELEGRAM_FAILURE_TEMPLATE || 'Pipeline KO\nError: {0}\n';
 
     // Parametri dinamici per i template
-    const successParams = [originalPrompt || '', refinedPrompt || '', caption || '', permalink || ''];
-    const failureParams = [originalPrompt || '', refinedPrompt || '', error || ''];
+    const successParams = [originalPrompt || '', permalink || ''];
+    const failureParams = [error || ''];
 
     if (status === 'success') {
       // Se abbiamo un'immagine, inviamo la foto con caption formattata; altrimenti testo
@@ -238,14 +238,12 @@ async function editMediaCaption({ telegramMessageId, caption, parseMode }) {
 async function sendMessageWithInlineKeyboard(urls, rows, topicId) {
   const header = process.env.TELEGRAM_GROUP_IMAGE_HEADER
   const mediaMessageId = await sendAnnotatedMediaGroupsWithOptionalHeader(urls, header, topicId)
-  console.log('Media message ID:', mediaMessageId)
   if (mediaMessageId && process.env.DATABASE_URL) {
     await insertTelegramMessage(String(mediaMessageId), 'voting_media') 
   }
 
   const text = process.env.TELEGRAM_KEYBOARD_HEADER
   const inlineKeyboradMessageId = await sendInlineKeyboard(text, rows, topicId)
-  console.log('Inline keyboard message ID:', inlineKeyboradMessageId)
   if (inlineKeyboradMessageId && process.env.DATABASE_URL) {
     await insertTelegramMessage(String(inlineKeyboradMessageId), 'voting_keyboard') 
   }
@@ -317,7 +315,6 @@ async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText, topi
       const label = ++globalIndex
       const transformed = await labeledImageUrl(url, label)
 
-      console.log('✅ Media group created:', transformed)
       media.push({ type: 'photo', media: transformed })
     }
 

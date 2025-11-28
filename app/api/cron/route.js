@@ -32,8 +32,6 @@ async function handler() {
     let lastResult = null;
 
     for (let i = 0; i < dailyPostCount; i++) {
-      // Esegue l'intera pipeline
-      // eslint-disable-next-line no-await-in-loop
       setPageName('');
       lastResult = await executeDailyPost(imageOptions);
     }

@@ -49,13 +49,12 @@ const withErrorReporting = (handler, options = {}) => {
         const mod = await import('./telegramNotifier.js');
 
         const sendTelegramNotification = mod.sendTelegramNotification || (mod.default && mod.default.sendTelegramNotification);
-        console.log('error', err); 
           await sendTelegramNotification({
                 status: 'error',
                 imageUrl: null,
                 caption: null,
-                originalPrompt: err.context?.originalPrompt,
-                refinedPrompt: err.context?.refinedPrompt,
+                //originalPrompt: err.context?.originalPrompt,
+                //refinedPrompt: err.context?.refinedPrompt,
                 error: err.message, 
                 permalink: null,
                 overrideBotToken: process.env.ERROR_LOGS_BOT_TOKEN,
