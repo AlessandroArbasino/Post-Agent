@@ -293,6 +293,7 @@ module.exports = {
     deleteTelegramMessage,
     getVotingUser,
     insertVotingUser,
-    deleteAllVotingUsers
+    deleteAllVotingUsers,
+    insertVotingNumber
 };
 
