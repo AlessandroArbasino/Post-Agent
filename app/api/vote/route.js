@@ -36,7 +36,7 @@ bot.on('callback_query', async (ctx) => {
       if (voterId) {
           const existing = await getVotingUser(String(voterId))
           if (existing) {
-            const previosVotingImage = images.find((it) => shortHash(it.voting_number) === existing.voted_image_number);
+            const previosVotingImage = images.find((it) => it.voting_number === existing.voted_image_number);
             console.log('previosVotingImage:', previosVotingImage)
             await updateVote(previosVotingImage.image_url, -1);
             console.log('update vote negative:', previosVotingImage.image_url)
