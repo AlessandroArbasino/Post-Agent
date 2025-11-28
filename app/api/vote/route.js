@@ -37,12 +37,12 @@ bot.on('callback_query', async (ctx) => {
             await ctx.answerCbQuery('Your vote has changed from ' + existing.voting_number + ' to ' + match.voting_number, { show_alert: true })
           }else{
             await insertVotingUser(String(voterId))
-            await ctx.answerCbQuery(`Thank you for voting image ${match.image_url}!`, { show_alert: true })
+            await ctx.answerCbQuery(`Thank you for voting image ${match.voting_number}!`, { show_alert: true })
           }
           await updateVote(match.image_url,true)
       }
     }else{
-      await ctx.answerCbQuery('Something went wrong', { show_alert: true })
+      await ctx.answerCbQuery('Data does not begin with "vote:", please try again', { show_alert: true })
     }
   } catch (e) {
     await ctx.answerCbQuery('Something went wrong', { show_alert: true })
