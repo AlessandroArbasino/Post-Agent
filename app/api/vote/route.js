@@ -17,14 +17,11 @@ function shortHash(input) {
 // Handle button clicks
 bot.on('callback_query', async (ctx) => {
   const data = ctx.callbackQuery?.data || ''
-  console.log('callback_query', data)
   try {
     if (data.startsWith('vote:')) {
       const h = data.slice('vote:'.length)
-      console.log('imageUrl:', h)
       // Prevent duplicate votes per Telegram user
       const voterId = ctx.from?.id || ctx.callbackQuery?.from?.id
-      console.log('voterId:', voterId)
       
       const images = await getAllImageForVoting()
       const match = images.find((it) => shortHash(it.image_url) === h)
@@ -37,18 +34,14 @@ bot.on('callback_query', async (ctx) => {
           const existing = await getVotingUser(String(voterId))
           if (existing) {
             const previosVotingImage = images.find((it) => it.voting_number === existing.voted_image_number);
-            console.log('previosVotingImage:', previosVotingImage)
             await updateVote(previosVotingImage.image_url, -1);
-            console.log('update vote negative:', previosVotingImage.image_url)
             await updateVotingUser(String(voterId),match.voting_number);
-            console.log('update voting user:', String(voterId))
             await updateVote(match.image_url, 1)
-            console.log('update vote positive:', match.image_url)
-            await ctx.answerCbQuery('Your vote has changed from ' + existing.voting_number + ' to ' + match.voting_number, { show_alert: true })
+            await ctx.answerCbQuery('Your vote has changed from image number  ' + previosVotingImage.voting_number + ' to image number ' + match.voting_number, { show_alert: true })
           }else{
             await insertVotingUser(String(voterId),match.voting_number);
             await updateVote(match.image_url, 1)
-            await ctx.answerCbQuery(`Thank you for voting image ${match.voting_number}!`, { show_alert: true })
+            await ctx.answerCbQuery(`Thank you for voting image number ${match.voting_number}!`, { show_alert: true })
           }
       }
     }else{
