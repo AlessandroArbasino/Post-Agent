@@ -162,13 +162,13 @@ const insertVotingNumber = async ({ votingNumber,imageUrl }) => {
 /**
  * Aggiorna il conteggio dei voti per un'immagine
  * @param {string} url - L'URL dell'immagine
- * @param {boolean} [increment=true] - Se true aggiunge un voto, se false lo sottrae
+ * @param {number} [change=1] - Delta numerico (es. +1, -1, +2)
  * @returns {Promise<Object>} L'oggetto contenente l'URL dell'immagine e il nuovo conteggio dei voti
  */
-const updateVote = async (url, increment = true) => {
+const updateVote = async (url, change = 1) => {
   const sql = await getClient();
-  const voteChange = increment ? 1 : -1;
-  
+  const voteChange = Number.isFinite(change) ? Math.trunc(change) : 0;
+
   const result = await sql`
     insert into voting_images (image_url, votes)
     values (${url}, ${voteChange})
@@ -265,9 +265,9 @@ const getVotingUser = async (telegramUserId) => {
   return rows[0]
 }
 
-const insertVotingUser = async (telegramUserId) => {
+const insertVotingUser = async (telegramUserId,imageUrl) => {
   const sql = await getClient();
-  await sql`insert into voting_users (telegram_user_id) values (${telegramUserId})`
+  await sql`insert into voting_users (telegram_user_id,voted_image_url) values (${telegramUserId},${imageUrl})`
 }
 
 const deleteAllVotingUsers = async () => {

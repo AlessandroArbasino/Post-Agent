@@ -35,14 +35,16 @@ bot.on('callback_query', async (ctx) => {
       }
       if (voterId) {
           const existing = await getVotingUser(String(voterId))
+
           if (existing) {
-            await updateVote(existing.voted_image,false);
+            const previosVotingImage = images.find((it) => shortHash(existing.voted_image_url) === h)
+            await updateVote(previosVotingImage.image_url, -1);
             await ctx.answerCbQuery('Your vote has changed from ' + existing.voting_number + ' to ' + match.voting_number, { show_alert: true })
           }else{
-            await insertVotingUser(String(voterId))
+            await insertVotingUser(String(voterId),match.image_url)
             await ctx.answerCbQuery(`Thank you for voting image ${match.voting_number}!`, { show_alert: true })
           }
-          await updateVote(match.image_url,true)
+          await updateVote(match.image_url, 1)
       }
     }else{
       await ctx.answerCbQuery('Data does not begin with "vote:", please try again', { show_alert: true })
