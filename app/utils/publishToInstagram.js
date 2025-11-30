@@ -91,6 +91,11 @@ const manageCarouselPublish = async ({token, igUserId, graphVersion, imageUrls, 
              graphVersion : graphVersion,
              isCarouselItem : true,
              url : url});
+
+        await pollCreationStatus({token : token,
+        graphVersion : graphVersion,
+        creationId : id});  
+
         childrenIds.push(id);
     }
 
