@@ -1,16 +1,15 @@
 const { convertWebPToPng } = require('./imageConvert');
+const {generateSpeech} = require('./refinePrompt');
 
 const generateVideo = async ({ backgroundUrl, caption }) => {
   const asset = await uploadAssetToHeygen(backgroundUrl);
   const speechText = await generateSpeech({ prompt: caption });
   const speech = speechText.geminiResponse;
   const videoId = await generateVideoHeygen({ backgroundAssetId: asset.id, backgroundUrl: asset.url, speechText: speech });
-  return videoId;
+  return {videoId : videoId,backgroundAssetId : asset.id};
 };
 
 const generateVideoHeygen = async ({ backgroundUrl, backgroundAssetId, speechText } = {}) => {
-  console.log('backgroundUrl', backgroundUrl);
-  console.log('backgroundAssetId', backgroundAssetId);
   const body = {
     caption: 'false',
     video_inputs: [
@@ -67,15 +66,26 @@ const generateVideoHeygen = async ({ backgroundUrl, backgroundAssetId, speechTex
   return response.data.video_id;
 };
 
-const getVideoUrl = async (videoId) => {
-  movioApi.auth(process.env.VIDEO_GENERATION_API_KEY);
-  const response = await movioApi.videoStatus({ video_id: videoId });
-  return response.data.video_url != null ? response.data.video_url : null;
-};
+const deleteAssetImage = async({imageAssetId})=> {
+  const body = {
+      asset_id : imageAssetId
+    };
+    await fetchHeygen({url:'https://api.heygen.com/v1/asset/asset_id/delete',body});
+}
 
-const fetchHeygen = async ({ url, body, contentType = 'application/json', duplex }) => {
+const deleteAssetvideo = async({videoAssetId}) => {
+  const body = {
+    video_id : videoAssetId,
+    type : 'heygen_video'
+  };
+  await fetchHeygen({url:'https://api.heygen.com/v1/video.delete',body:body, method:'DELETE'});
+}
+
+
+
+const fetchHeygen = async ({ url, body, contentType = 'application/json', duplex, method = 'POST'  }) => {
   const options = {
-    method: 'POST',
+    method: method,
     headers: {
       accept: 'application/json',
       'content-type': contentType,
@@ -112,4 +122,4 @@ const uploadAssetToHeygen = async (url) => {
   return { id: heygenResponce.data.id, url: heygenResponce.data.url };
 };
 
-module.exports = { generateVideo};
+module.exports = { generateVideo, deleteAssetImage, deleteAssetvideo };

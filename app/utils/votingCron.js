@@ -72,7 +72,7 @@ const caption =  generateInstagramCaption({refinedPrompt: process.env.WINNING_CA
     await deleteMessageById({telegramMessageId: keyboard.telegram_message_id})
   }
 
-  await generateVideo({backgroundUrl : top.image_url,caption : top.instagram_caption})
+  const videoAssets = await generateVideo({backgroundUrl : top.image_url,caption : top.instagram_caption})
 
   if (process.env.CLOUDINARY_ENABLE_DELETE === 'true') {
     try {
@@ -81,12 +81,19 @@ const caption =  generateInstagramCaption({refinedPrompt: process.env.WINNING_CA
       for (const f of folders) {
         await deleteFolder(f)
       }
+
+      //removes the folder with annotated images for voting
+      await deleteFolder('annotated');
+
     } catch (e) {
       console.warn('Cloudinary bulk cleanup skipped/failed', e)
     }
+
   }
 
   if(process.env.DATABASE_URL) {
+    await toggleVideoAsset({type: process.env.HEYGEN_IMAGE_ASSET_TYPE,videoAssetId : videoAssets.backgroundAssetId});
+    await toggleVideoAsset({type:process.env.HEYGEN_VIDEO_ASSET_TYPE,videoAssetId : videoAssets.videoId});
     await deleteAllVotingImages()
     await deleteAllVotingUsers()
     await deleteTelegramMessage('voting_media')

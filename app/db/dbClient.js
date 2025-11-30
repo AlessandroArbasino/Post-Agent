@@ -281,6 +281,35 @@ const deleteAllVotingUsers = async () => {
 }
 
 
+
+
+/**
+ * Toggle a row in video_asset by type.
+ * If a row with the given type exists, delete it.
+ * Otherwise, insert it and return the new video_asset_id.
+ * @param {string} type
+ * @returns {Promise<{action:'inserted'|'deleted', video_asset_id:number|null}>}
+ */
+const toggleVideoAsset = async ({type, videoAssetId}) => {
+  const sql = await getClient();
+  // Check if a row with this type exists
+  const existing = await sql`select video_asset_id from video_asset where type = ${type} limit 1`;
+  if (existing.length > 0) {
+    await sql`delete from video_asset where type = ${type}`;
+    return { action: 'deleted' };
+  }
+  await sql`insert into video_asset (type,video_asset_id) values (${type},${videoAssetId})`;
+  return { action: 'inserted'};
+}
+
+const getVideoAssetIdByType = async ({type:type}) => {
+  const sql = await getClient();
+  const rows = await sql`select video_asset_id from video_asset where type = ${type} limit 1`;
+  return rows?.[0]?.video_asset_id ?? null;
+}
+
+
+
 module.exports = {
     getInstagramConfig,
     updateInstagramToken,
@@ -300,6 +329,8 @@ module.exports = {
     updateVotingUser,
     insertVotingUser,
     deleteAllVotingUsers,
-    insertVotingNumber
+    insertVotingNumber,
+    toggleVideoAsset,
+    getVideoAssetIdByType
 };
 

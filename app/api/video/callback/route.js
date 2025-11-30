@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 const { installGlobalErrorHandlers, withErrorReporting } = require('../../../utils/errorMiddleware');
-const { publishToInstagram } = require('../../../utils/publishToInstagram');
+const { manageVideoCallback } = require('../../../handlers/videoCallbackHandler');
+
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
@@ -22,7 +23,7 @@ async function handler(request) {
       return NextResponse.json({ error: 'Missing field: video_url' }, { status: 400 });
     }
 
-    await publishToInstagram({ url: videoUrl, caption: '', mediaType: 'REELS', isVideo: true });
+    await manageVideoCallback({url : videoUrl})
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
