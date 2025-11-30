@@ -1,12 +1,12 @@
-import sharp from 'sharp';
-import { Buffer } from 'buffer';
+const sharp = require('sharp');
+const { Buffer } = require('buffer');
 
 /**
  * Converte un Buffer contenente dati WebP in un Buffer PNG.
  * @param {Buffer} webpBuffer - Il Buffer contenente l'immagine WebP.
  * @returns {Promise<Buffer>} Un Buffer contenente l'immagine PNG.
  */
-async function convertWebPToPng(webpBuffer) {
+const convertWebPToPng = async (webpBuffer) => {
     const pngBuffer = await sharp(webpBuffer)
       .png({
         palette: true, 
@@ -18,5 +18,4 @@ async function convertWebPToPng(webpBuffer) {
 
 }
 
-
-export { convertWebPToPng };
+module.exports = { convertWebPToPng };

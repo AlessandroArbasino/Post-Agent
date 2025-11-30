@@ -5,6 +5,7 @@ const { deleteFolder } = require('./uploadToCloudinary')
 const { getBestPhoto } = require('./scoring')
 const { generateInstagramCaption } = require('./refinePrompt')
 const { insertVotingNumber } = require('../db/dbClient')
+const { generateVideo } = require('./generateVideo')
 const crypto = require('crypto')
 
 /**
@@ -70,6 +71,8 @@ const caption =  generateInstagramCaption({refinedPrompt: process.env.WINNING_CA
   if (keyboard) {
     await deleteMessageById({telegramMessageId: keyboard.telegram_message_id})
   }
+
+  await generateVideo({backgroundUrl : top.image_url,caption : top.instagram_caption})
 
   if (process.env.CLOUDINARY_ENABLE_DELETE === 'true') {
     try {
