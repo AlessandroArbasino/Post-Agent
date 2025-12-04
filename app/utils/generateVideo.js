@@ -50,7 +50,7 @@ const generateVideoHeygen = async ({ backgroundUrl, backgroundAssetId, speechTex
           font_weight: "bold",
           position: {
             "x": 0.5,
-            "y": -0.5
+            "y": 0
           },
           text_align: "left",
           line_height: 1
