@@ -33,7 +33,7 @@ export async function scoreItems(items) {
         }
       }
       const score = like_count * LIKE_MULT + comments_count * COMMENT_MULT + (it.votes ?? 0) * VOTE_MULT
-      return { image_url: it.image_url, like_count, comments_count, score }
+      return { image_url: it.image_url, like_count, comments_count, score, instagram_caption : it.instagram_caption }
     })
   )
   return results

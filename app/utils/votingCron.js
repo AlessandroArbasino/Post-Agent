@@ -1,5 +1,5 @@
 const { sendMessageWithInlineKeyboard, sendWinnerNotification, editMessageToPlainText, editMediaCaption, deleteMessageById} = require('./telegramNotifier')
-const { getAllImageFolders, deleteAllVotingImages, deleteAllVotingUsers, getTelegramMessage , insertTelegramMessage, deleteTelegramMessage} = require('../db/dbClient')
+const { getAllImageFolders, deleteAllVotingImages, deleteAllVotingUsers, getTelegramMessage , insertTelegramMessage, deleteTelegramMessage, toggleVideoAsset} = require('../db/dbClient')
 const { publishToInstagram, publishCarouselToInstagram, } = require('./publishToInstagram')
 const { deleteFolder } = require('./uploadToCloudinary')
 const { getBestPhoto } = require('./scoring')
