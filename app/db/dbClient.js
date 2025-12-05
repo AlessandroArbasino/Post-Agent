@@ -7,18 +7,23 @@ const { decryptToken, encryptToken } = require('../utils/crypto');
 
 // Neon serverless client (ESM) via dynamic import for CommonJS compatibility
 let neonClientPromise = null;
+/**
+ * Gets or creates a singleton Neon PostgreSQL client.
+ * @returns {Promise<Function>} Neon SQL client function
+ * @throws {Error} If DATABASE_URL is not configured
+ */
 const getClient = async () => {
-    if (!neonClientPromise) {
-        neonClientPromise = (async () => {
-            const { neon } = await import('@neondatabase/serverless');
-            const connectionString = process.env.DATABASE_URL;
-            if (!connectionString) {
-                throw new Error('DATABASE_URL not configured');
-            }
-            return neon(connectionString);
-        })();
-    }
-    return await neonClientPromise;
+  if (!neonClientPromise) {
+    neonClientPromise = (async () => {
+      const { neon } = await import('@neondatabase/serverless');
+      const connectionString = process.env.DATABASE_URL;
+      if (!connectionString) {
+        throw new Error('DATABASE_URL not configured');
+      }
+      return neon(connectionString);
+    })();
+  }
+  return await neonClientPromise;
 };
 
 /**
@@ -26,27 +31,27 @@ const getClient = async () => {
  * @returns {Promise<Object>} - { token, createdate }
  */
 const getInstagramConfig = async () => {
-    try {
-        const sql = await getClient();
-        const result = await sql`SELECT token
+  try {
+    const sql = await getClient();
+    const result = await sql`SELECT token
                                  FROM tokens
                                  WHERE token_type = ${process.env.INSTAGRAM_TOKEN_TYPE}
                                  LIMIT 1`;
 
-        if (result.length === 0) {
-            console.warn('⚠️  No Instagram configuration found in DB');
-            return null;
-        }
-
-        const row = result[0];
-        return {
-            token: decryptToken(row.token),
-            createdate: row.create_date
-        };
-    } catch (error) {
-        console.error('❌ Error retrieving Instagram configuration:', error);
-        throw error;
+    if (result.length === 0) {
+      console.warn('⚠️  No Instagram configuration found in DB');
+      return null;
     }
+
+    const row = result[0];
+    return {
+      token: decryptToken(row.token),
+      createdate: row.create_date
+    };
+  } catch (error) {
+    console.error('❌ Error retrieving Instagram configuration:', error);
+    throw error;
+  }
 };
 
 /**
@@ -55,11 +60,11 @@ const getInstagramConfig = async () => {
  * @returns {Promise<boolean>} - true if updated and encrypted successfully
  */
 const updateInstagramToken = async (accessToken) => {
-    try {
-        const encryptedToken = encryptToken(accessToken);
-        
-        const sql = await getClient();
-        await sql`UPDATE tokens
+  try {
+    const encryptedToken = encryptToken(accessToken);
+
+    const sql = await getClient();
+    await sql`UPDATE tokens
                    SET token = ${encryptedToken},
                        create_date = NOW()
                    WHERE id = (
@@ -67,12 +72,12 @@ const updateInstagramToken = async (accessToken) => {
                        WHERE token_type = ${process.env.INSTAGRAM_TOKEN_TYPE}
                        LIMIT 1
                    )`;
-        console.log('✅ Instagram token updated in database');
-        return true;
-    } catch (error) {
-        console.error('❌ Error updating Instagram token:', error);
-        throw error;
-    }
+    console.log('✅ Instagram token updated in database');
+    return true;
+  } catch (error) {
+    console.error('❌ Error updating Instagram token:', error);
+    throw error;
+  }
 };
 
 /**
@@ -80,28 +85,28 @@ const updateInstagramToken = async (accessToken) => {
  * @returns {Promise<Object|null>} - { id, prompt } or null if the queue is empty
  */
 const getNextPrompt = async () => {
-    try {
-        const sql = await getClient();
-        const result = await sql`SELECT id, prompt
+  try {
+    const sql = await getClient();
+    const result = await sql`SELECT id, prompt
                                  FROM prompt_queue
                                  ORDER BY create_date ASC
                                  LIMIT 1`;
 
-        if (result.length === 0) {
-            console.log('ℹ️  Prompt queue is empty');
-            return null;
-        }
-
-        const row = result[0];
-
-        return {
-            id: row.id,
-            prompt: row.prompt,
-        };
-    } catch (error) {
-        console.error('❌ Error fetching next prompt:', error);
-        throw error;
+    if (result.length === 0) {
+      console.log('ℹ️  Prompt queue is empty');
+      return null;
     }
+
+    const row = result[0];
+
+    return {
+      id: row.id,
+      prompt: row.prompt,
+    };
+  } catch (error) {
+    console.error('❌ Error fetching next prompt:', error);
+    throw error;
+  }
 };
 
 /**
@@ -110,15 +115,15 @@ const getNextPrompt = async () => {
  * @returns {Promise<boolean>}
  */
 const removeCompletedPrompt = async (promptId) => {
-    try {
-        const sql = await getClient();
-        await sql`DELETE FROM prompt_queue WHERE id = ${promptId}`;
-        console.log(`🗑️ Prompt ${promptId} deleted after completion`);
-        return true;
-    } catch (error) {
-        console.error('❌ Error deleting completed prompt:', error);
-        throw error;
-    }
+  try {
+    const sql = await getClient();
+    await sql`DELETE FROM prompt_queue WHERE id = ${promptId}`;
+    console.log(`🗑️ Prompt ${promptId} deleted after completion`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error deleting completed prompt:', error);
+    throw error;
+  }
 };
 
 /**
@@ -129,29 +134,37 @@ const removeCompletedPrompt = async (promptId) => {
  * @param {string} params.cloudinaryFolder
  * @returns {Promise<{id:number}>}
  */
-const insertVotingImage = async ({ instagramPostId, imageUrl, cloudinaryFolder,instagramCaption,votingNumber }) => {
-    try {
-        const sql = await getClient();
-        const rows = await sql`INSERT INTO voting_images (instagram_post_id, image_url, cloudinary_folder, create_date, instagram_caption)
+const insertVotingImage = async ({ instagramPostId, imageUrl, cloudinaryFolder, instagramCaption, votingNumber }) => {
+  try {
+    const sql = await getClient();
+    const rows = await sql`INSERT INTO voting_images (instagram_post_id, image_url, cloudinary_folder, create_date, instagram_caption)
                                VALUES (${instagramPostId}, ${imageUrl}, ${cloudinaryFolder}, NOW(),${instagramCaption})
                                RETURNING image_id`;
-        const id = rows?.[0]?.image_id;
-        console.log('✅ voting_images insert id:', id);
-        return { id };
-    } catch (error) {
-        throw error;
-    }
+    const id = rows?.[0]?.image_id;
+    console.log('✅ voting_images insert id:', id);
+    return { id };
+  } catch (error) {
+    throw error;
+  }
 };
 
-const insertVotingNumber = async ({ votingNumber,imageUrl }) => {
-    try {
-        const sql = await getClient();
-        const rows = await sql`UPDATE voting_images
+/**
+ * Updates the voting number for an image.
+ * @param {Object} params - Update parameters
+ * @param {number} params.votingNumber - The voting number to assign
+ * @param {string} params.imageUrl - URL of the image to update
+ * @returns {Promise<void>}
+ * @throws {Error} If database operation fails
+ */
+const insertVotingNumber = async ({ votingNumber, imageUrl }) => {
+  try {
+    const sql = await getClient();
+    const rows = await sql`UPDATE voting_images
                               set voting_number = ${votingNumber}
                               where image_url = ${imageUrl}`;
-    } catch (error) {
-        throw error;
-    }
+  } catch (error) {
+    throw error;
+  }
 };
 
 /**
@@ -243,38 +256,75 @@ const deleteAllVotingImages = async () => {
 }
 
 
+/**
+ * Inserts a Telegram message record for tracking.
+ * @param {string} messageId - Telegram message ID
+ * @param {string} messageType - Type of message (e.g., 'voting_media', 'voting_keyboard')
+ * @returns {Promise<void>}
+ */
 const insertTelegramMessage = async (messageId, messageType) => {
   const sql = await getClient();
   await sql`insert into telegram_messages (telegram_message_id,message_type) values (${messageId}, ${messageType})`
 }
 
+/**
+ * Retrieves a Telegram message by type.
+ * @param {string} messageType - Type of message to retrieve
+ * @returns {Promise<Object|undefined>} Telegram message object or undefined if not found
+ */
 const getTelegramMessage = async (messageType) => {
   const sql = await getClient();
   const rows = await sql`select * from telegram_messages where message_type = ${messageType}`
   return rows[0]
 }
 
+/**
+ * Deletes a Telegram message by type.
+ * @param {string} messageType - Type of message to delete
+ * @returns {Promise<void>}
+ */
 const deleteTelegramMessage = async (messageType) => {
   const sql = await getClient();
   await sql`delete from telegram_messages where message_type = ${messageType}`
 }
 
+/**
+ * Retrieves a voting user by Telegram user ID.
+ * @param {string} telegramUserId - Telegram user ID
+ * @returns {Promise<Object|undefined>} Voting user object or undefined if not found
+ */
 const getVotingUser = async (telegramUserId) => {
   const sql = await getClient();
   const rows = await sql`select * from voting_users where telegram_user_id = ${telegramUserId}`
   return rows[0]
 }
 
-const updateVotingUser = async (telegramUserId,votedImageNumber) => {
+/**
+ * Updates the voted image number for a voting user.
+ * @param {string} telegramUserId - Telegram user ID
+ * @param {number} votedImageNumber - Number of the image voted for
+ * @returns {Promise<void>}
+ */
+const updateVotingUser = async (telegramUserId, votedImageNumber) => {
   const sql = await getClient();
   await sql`update voting_users set voted_image_number = ${votedImageNumber} where telegram_user_id = ${telegramUserId}`
 }
 
-const insertVotingUser = async (telegramUserId,votedImageNumber) => {
+/**
+ * Inserts a new voting user record.
+ * @param {string} telegramUserId - Telegram user ID
+ * @param {number} votedImageNumber - Number of the image voted for
+ * @returns {Promise<void>}
+ */
+const insertVotingUser = async (telegramUserId, votedImageNumber) => {
   const sql = await getClient();
   await sql`insert into voting_users (telegram_user_id,voted_image_number) values (${telegramUserId},${votedImageNumber})`
 }
 
+/**
+ * Deletes all voting user records.
+ * @returns {Promise<void>}
+ */
 const deleteAllVotingUsers = async () => {
   const sql = await getClient();
   await sql`delete from voting_users`
@@ -287,7 +337,7 @@ const deleteAllVotingUsers = async () => {
  * @param {string} type
  * @returns {Promise<{action:'inserted'|'deleted'}>}
  */
-const toggleVideoAsset = async ({type, videoAssetId}) => {
+const toggleVideoAsset = async ({ type, videoAssetId }) => {
   const sql = await getClient();
   // Check if a row with this type exists
   const existing = await sql`select video_asset_id from video_asset where type = ${type} limit 1`;
@@ -296,10 +346,16 @@ const toggleVideoAsset = async ({type, videoAssetId}) => {
     return { action: 'deleted' };
   }
   await sql`insert into video_asset (type,video_asset_id) values (${type},${videoAssetId})`;
-  return { action: 'inserted'};
+  return { action: 'inserted' };
 }
 
-const getVideoAssetIdByType = async ({type:type}) => {
+/**
+ * Retrieves a video asset ID by type.
+ * @param {Object} params - Query parameters
+ * @param {string} params.type - Type of video asset
+ * @returns {Promise<string|null>} Video asset ID or null if not found
+ */
+const getVideoAssetIdByType = async ({ type: type }) => {
   const sql = await getClient();
   const rows = await sql`select video_asset_id from video_asset where type = ${type} limit 1`;
   return rows?.[0]?.video_asset_id ?? null;
@@ -308,26 +364,26 @@ const getVideoAssetIdByType = async ({type:type}) => {
 
 
 module.exports = {
-    getInstagramConfig,
-    updateInstagramToken,
-    getNextPrompt,
-    removeCompletedPrompt,
-    insertVotingImage,
-    updateVote,
-    getTopImage,
-    getAllImageFolders,
-    getAllImageForVoting,
-    markAllSentNow,
-    deleteAllVotingImages,
-    insertTelegramMessage,
-    getTelegramMessage,
-    deleteTelegramMessage,
-    getVotingUser,
-    updateVotingUser,
-    insertVotingUser,
-    deleteAllVotingUsers,
-    insertVotingNumber,
-    toggleVideoAsset,
-    getVideoAssetIdByType
+  getInstagramConfig,
+  updateInstagramToken,
+  getNextPrompt,
+  removeCompletedPrompt,
+  insertVotingImage,
+  updateVote,
+  getTopImage,
+  getAllImageFolders,
+  getAllImageForVoting,
+  markAllSentNow,
+  deleteAllVotingImages,
+  insertTelegramMessage,
+  getTelegramMessage,
+  deleteTelegramMessage,
+  getVotingUser,
+  updateVotingUser,
+  insertVotingUser,
+  deleteAllVotingUsers,
+  insertVotingNumber,
+  toggleVideoAsset,
+  getVideoAssetIdByType
 };
 

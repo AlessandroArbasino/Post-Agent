@@ -6,6 +6,12 @@
 
 const crypto = require("crypto");
 
+/**
+ * Retrieves and validates the encryption key from environment variables.
+ * Tries to parse TOKENS_CRYPTO_KEY as base64 or hex, falling back to scrypt derivation.
+ * @returns {Buffer} A 32-byte encryption key
+ * @throws {Error} If TOKENS_CRYPTO_KEY is not configured
+ */
 function getKey() {
   const raw = process.env.TOKENS_CRYPTO_KEY;
   if (!raw) {
@@ -29,7 +35,12 @@ function getKey() {
   return crypto.scryptSync(raw, "tokens_salt", 32);
 }
 
-// Returns string in the form base64(iv).base64(ciphertext).base64(tag)
+/**
+ * Encrypts a plaintext token using AES-256-GCM encryption.
+ * @param {string} plaintext - The plaintext string to encrypt
+ * @returns {string} Encrypted token in the format: base64(iv).base64(ciphertext).base64(tag)
+ * @throws {Error} If plaintext is not a string
+ */
 function encryptToken(plaintext) {
   if (typeof plaintext !== "string") {
     throw new Error("encryptToken requires a string");
@@ -42,8 +53,14 @@ function encryptToken(plaintext) {
   return `${iv.toString("base64")}.${enc.toString("base64")}.${tag.toString("base64")}`;
 }
 
+/**
+ * Decrypts a previously encrypted token using AES-256-GCM.
+ * @param {string} pack - Encrypted token string in format: base64(iv).base64(ciphertext).base64(tag)
+ * @returns {string} The decrypted plaintext token
+ * @throws {Error} If the encrypted token format is invalid
+ */
 function decryptToken(pack) {
-  
+
   if (typeof pack !== "string" || pack.split(".").length !== 3) {
     throw new Error("Invalid encrypted token format");
   }

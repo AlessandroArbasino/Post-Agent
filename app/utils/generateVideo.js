@@ -1,14 +1,30 @@
 const { convertWebPToPng } = require('./imageConvert');
-const {generateSpeech} = require('./refinePrompt');
+const { generateSpeech } = require('./refinePrompt');
 
+/**
+ * Generates a video with avatar using HeyGen API.
+ * Uploads background image, generates speech from caption, and creates video.
+ * @param {Object} params - Generation parameters
+ * @param {string} params.backgroundUrl - URL of the background image
+ * @param {string} params.caption - Caption text to generate speech from
+ * @returns {Promise<{videoId: string, backgroundAssetId: string}>} Video and asset IDs
+ */
 const generateVideo = async ({ backgroundUrl, caption }) => {
   const asset = await uploadAssetToHeygen(backgroundUrl);
   const speechText = await generateSpeech({ prompt: caption });
   const speech = speechText.geminiResponse;
   const videoId = await generateVideoHeygen({ backgroundAssetId: asset.id, backgroundUrl: asset.url, speechText: speech });
-  return {videoId : videoId,backgroundAssetId : asset.id};
+  return { videoId: videoId, backgroundAssetId: asset.id };
 };
 
+/**
+ * Creates a video using HeyGen API with specified avatar, voice, and background.
+ * @param {Object} params - Video generation parameters
+ * @param {string} params.backgroundUrl - URL of the background image
+ * @param {string} params.backgroundAssetId - HeyGen asset ID for the background
+ * @param {string} params.speechText - Text for the avatar to speak
+ * @returns {Promise<string>} The generated video ID
+ */
 const generateVideoHeygen = async ({ backgroundUrl, backgroundAssetId, speechText } = {}) => {
   const body = {
     caption: 'false',
@@ -66,24 +82,47 @@ const generateVideoHeygen = async ({ backgroundUrl, backgroundAssetId, speechTex
   return response.data.video_id;
 };
 
-const deleteAssetImage = async({imageAssetId})=> {
+/**
+ * Deletes an image asset from HeyGen.
+ * @param {Object} params - Deletion parameters
+ * @param {string} params.imageAssetId - The HeyGen image asset ID to delete
+ * @returns {Promise<void>}
+ */
+const deleteAssetImage = async ({ imageAssetId }) => {
   const body = {
-      asset_id : imageAssetId
-    };
-    await fetchHeygen({url:'https://api.heygen.com/v1/asset/asset_id/delete',body});
-}
-
-const deleteAssetvideo = async({videoAssetId}) => {
-  const body = {
-    video_id : videoAssetId,
-    type : 'heygen_video'
+    asset_id: imageAssetId
   };
-  await fetchHeygen({url:'https://api.heygen.com/v1/video.delete',body:body, method:'DELETE'});
+  await fetchHeygen({ url: 'https://api.heygen.com/v1/asset/asset_id/delete', body });
+}
+
+/**
+ * Deletes a video asset from HeyGen.
+ * @param {Object} params - Deletion parameters
+ * @param {string} params.videoAssetId - The HeyGen video asset ID to delete
+ * @returns {Promise<void>}
+ */
+const deleteAssetvideo = async ({ videoAssetId }) => {
+  const body = {
+    video_id: videoAssetId,
+    type: 'heygen_video'
+  };
+  await fetchHeygen({ url: 'https://api.heygen.com/v1/video.delete', body: body, method: 'DELETE' });
 }
 
 
 
-const fetchHeygen = async ({ url, body, contentType = 'application/json', duplex, method = 'POST'  }) => {
+/**
+ * Makes HTTP requests to HeyGen API with authentication.
+ * @param {Object} params - Request parameters
+ * @param {string} params.url - API endpoint URL
+ * @param {Object|Buffer} params.body - Request body (JSON object or Buffer)
+ * @param {string} [params.contentType='application/json'] - Content-Type header
+ * @param {string} [params.duplex] - Duplex mode for streaming
+ * @param {string} [params.method='POST'] - HTTP method
+ * @returns {Promise<Object>} Parsed JSON response from HeyGen API
+ * @throws {Error} If the request fails
+ */
+const fetchHeygen = async ({ url, body, contentType = 'application/json', duplex, method = 'POST' }) => {
   const options = {
     method: method,
     headers: {
@@ -106,6 +145,13 @@ const fetchHeygen = async ({ url, body, contentType = 'application/json', duplex
   return await response.json();
 };
 
+/**
+ * Uploads an image to HeyGen, converting it to PNG format.
+ * Downloads the image from URL, converts WebP to PNG, and uploads to HeyGen.
+ * @param {string} url - Public URL of the image to upload
+ * @returns {Promise<{id: string, url: string}>} HeyGen asset ID and URL
+ * @throws {Error} If image download or upload fails
+ */
 const uploadAssetToHeygen = async (url) => {
   const srcResp = await fetch(url);
   if (!srcResp.ok) {

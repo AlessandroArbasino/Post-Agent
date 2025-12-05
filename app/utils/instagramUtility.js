@@ -2,33 +2,57 @@ const fetch = (...args) => (globalThis.fetch ? globalThis.fetch(...args) : impor
 const { getInstagramConfig } = require('../db/dbClient');
 const { manageLongLiveToken } = require('../utils/instagramToken');
 
+/**
+ * Calculates if Instagram token needs refresh and refreshes it if necessary.
+ * Checks if token is older than threshold days and refreshes it automatically.
+ * @param {Object} instagramConfig - Instagram configuration object
+ * @param {string} instagramConfig.token - Current Instagram access token
+ * @param {string} instagramConfig.createdate - Token creation date
+ * @returns {Promise<Object>} Updated Instagram configuration
+ * @throws {Error} If token refresh fails
+ */
 const instagramCalculateRefreshToken = async (instagramConfig) => {
     const thresholdDays = parseInt(process.env.DAYS_BETWEEN_TOKEN_REFRESH || '55', 10);
     if (instagramConfig?.createdate) {
-      const last = new Date(instagramConfig.createdate);
-      const diffDays = (Date.now() - last.getTime()) / 86400000;
-      if (diffDays >= thresholdDays) {
-        try {
-          const refreshResult = await manageLongLiveToken(instagramConfig.token);
-          if (!refreshResult?.success) {
-            throw new Error(`Token refresh failed: ${refreshResult?.error || 'unknown'}`);
-          }
-          instagramConfig = await getInstagramConfig();
-        } catch (e) {
-          throw new Error(e.message);
+        const last = new Date(instagramConfig.createdate);
+        const diffDays = (Date.now() - last.getTime()) / 86400000;
+        if (diffDays >= thresholdDays) {
+            try {
+                const refreshResult = await manageLongLiveToken(instagramConfig.token);
+                if (!refreshResult?.success) {
+                    throw new Error(`Token refresh failed: ${refreshResult?.error || 'unknown'}`);
+                }
+                instagramConfig = await getInstagramConfig();
+            } catch (e) {
+                throw new Error(e.message);
+            }
         }
-      }
     }
     return instagramConfig;
 };
 
-const createInstagramMedia = async ({token, igUserId, graphVersion, url, caption, isCarouselItem = false,mediaType = null,childrenIds = null,isVideo = false}) => {
+/**
+ * Creates an Instagram media container via Graph API.
+ * @param {Object} params - Media creation parameters
+ * @param {string} params.token - Instagram access token
+ * @param {string} params.igUserId - Instagram user ID
+ * @param {string} params.graphVersion - Graph API version (e.g., 'v21.0')
+ * @param {string} params.url - Media URL (image or video)
+ * @param {string} params.caption - Media caption
+ * @param {boolean} [params.isCarouselItem=false] - Whether this is a carousel item
+ * @param {string} [params.mediaType=null] - Media type (e.g., 'STORIES', 'CAROUSEL')
+ * @param {Array<string>} [params.childrenIds=null] - Array of child media IDs for carousel
+ * @param {boolean} [params.isVideo=false] - Whether the media is a video
+ * @returns {Promise<string>} The created media container ID
+ * @throws {Error} If media creation fails or response is invalid
+ */
+const createInstagramMedia = async ({ token, igUserId, graphVersion, url, caption, isCarouselItem = false, mediaType = null, childrenIds = null, isVideo = false }) => {
     const res = await fetch(
         `https://graph.facebook.com/${graphVersion}/${igUserId}/media`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify((() => {
+            body: JSON.stringify((() => {
                 const payload = {
                     access_token: token,
                     caption: caption || '',
@@ -63,13 +87,24 @@ const createInstagramMedia = async ({token, igUserId, graphVersion, url, caption
     return json.id;
 }
 
-const publishInstagramMedia = async ({token, igUserId, graphVersion, creationId,postToShareId = null}) => {
+/**
+ * Publishes an Instagram media container.
+ * @param {Object} params - Publishing parameters
+ * @param {string} params.token - Instagram access token
+ * @param {string} params.igUserId - Instagram user ID
+ * @param {string} params.graphVersion - Graph API version
+ * @param {string} params.creationId - Media container ID to publish
+ * @param {string} [params.postToShareId=null] - Optional sticker asset ID for stories
+ * @returns {Promise<string>} The published media ID
+ * @throws {Error} If publishing fails or response is invalid
+ */
+const publishInstagramMedia = async ({ token, igUserId, graphVersion, creationId, postToShareId = null }) => {
     const res = await fetch(
         `https://graph.facebook.com/${graphVersion}/${igUserId}/media_publish`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:JSON.stringify((() => {
+            body: JSON.stringify((() => {
                 const payload = {
                     creation_id: creationId,
                     access_token: token
@@ -79,7 +114,7 @@ const publishInstagramMedia = async ({token, igUserId, graphVersion, creationId,
                 }
                 return payload;
             })())
-        }   
+        }
     );
     if (!res.ok) {
         const txt = await res.text();
@@ -93,7 +128,17 @@ const publishInstagramMedia = async ({token, igUserId, graphVersion, creationId,
     return json.id;
 }
 
-const fetchInstagramMedia = async ({token, graphVersion, mediaId, fields}) => {
+/**
+ * Fetches Instagram media information via Graph API.
+ * @param {Object} params - Fetch parameters
+ * @param {string} params.token - Instagram access token
+ * @param {string} params.graphVersion - Graph API version
+ * @param {string} params.mediaId - Instagram media ID
+ * @param {string} params.fields - Comma-separated list of fields to retrieve
+ * @returns {Promise<Object>} Media information object
+ * @throws {Error} If fetching fails
+ */
+const fetchInstagramMedia = async ({ token, graphVersion, mediaId, fields }) => {
     const res = await fetch(
         `https://graph.facebook.com/${graphVersion}/${mediaId}?fields=${encodeURIComponent(fields)}&access_token=${token}`,
         { method: 'GET' }
