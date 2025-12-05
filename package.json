@@ -30,6 +30,6 @@
     "telegraf": "^4.16.3"
   },
   "devDependencies": {
-    "next": "^15.5.4"
+    "next": "^16.0.7"
   }
 }

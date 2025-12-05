@@ -280,15 +280,12 @@ const deleteAllVotingUsers = async () => {
   await sql`delete from voting_users`
 }
 
-
-
-
 /**
  * Toggle a row in video_asset by type.
  * If a row with the given type exists, delete it.
  * Otherwise, insert it and return the new video_asset_id.
  * @param {string} type
- * @returns {Promise<{action:'inserted'|'deleted', video_asset_id:number|null}>}
+ * @returns {Promise<{action:'inserted'|'deleted'}>}
  */
 const toggleVideoAsset = async ({type, videoAssetId}) => {
   const sql = await getClient();
