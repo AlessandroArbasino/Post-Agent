@@ -153,7 +153,7 @@ const fetchInstagramMedia = async ({ token, graphVersion, mediaId, fields }) => 
 
 // Polls the creation status of a media container until it is FINISHED or ERROR
 // Returns an object { status: 'FINISHED'|'ERROR'|'TIMEOUT', last: <lastResponseOrNull> }
-const pollCreationStatus = async ({ token, graphVersion, creationId, intervalMs = 1000, maxAttempts = 30 }) => {
+const pollCreationStatus = async ({ token, graphVersion, creationId, intervalMs = 1000, maxAttempts = 50 }) => {
     let attempts = 0;
     let last = null;
     while (attempts < maxAttempts) {
