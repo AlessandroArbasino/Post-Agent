@@ -44,7 +44,7 @@ const publishCarouselToInstagram = async ({ secondImageUrl, caption = '' }) => {
 
     const defaultImageUrl = process.env.INSTAGRAM_DEFAULT_WINNING_IMAGE_URL;
 
-    const { creationId, mediaId, permalink } = await manageCarouselPublish({
+    const { creationId, mediaId } = await manageCarouselPublish({
         token: instagramConfig.token,
         igUserId: findEnvVariable('IG_USER_ID'),
         graphVersion: graphVersion,
@@ -52,7 +52,7 @@ const publishCarouselToInstagram = async ({ secondImageUrl, caption = '' }) => {
         caption: caption
     });
 
-    return { success: true, mode: 'executed', creationId, mediaId, permalink, message: 'Instagram carousel published successfully' };
+    return { success: true, mode: 'executed', creationId, mediaId, message: 'Instagram carousel published successfully' };
 };
 
 const managePublish = async ({ token, igUserId, graphVersion, url, caption, postToShareId = null, mediaType = null, isVideo = false }) => {
@@ -84,6 +84,14 @@ const managePublish = async ({ token, igUserId, graphVersion, url, caption, post
         graphVersion: graphVersion,
         creationId: creationId,
         postToShareId: postToShareId
+    });
+
+    // Step 3: Retrieve permalink of published media
+    const fetchResponse = await fetchInstagramMedia({
+        token: token,
+        graphVersion: graphVersion,
+        mediaId: mediaId,
+        fields: 'permalink'
     });
 
     return { creationId, mediaId, permalink: fetchResponse.permalink };
@@ -136,14 +144,7 @@ const manageCarouselPublish = async ({ token, igUserId, graphVersion, imageUrls,
         caption: caption
     });
 
-    const fetchResponse = await fetchInstagramMedia({
-        token: token,
-        graphVersion: graphVersion,
-        mediaId: mediaId,
-        fields: 'permalink'
-    });
-
-    return { creationId, mediaId, permalink: fetchResponse.permalink };
+    return { creationId, mediaId };
 };
 
 const fetchInstagramMetrics = async (mediaId) => {
