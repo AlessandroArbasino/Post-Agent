@@ -86,14 +86,6 @@ const managePublish = async ({ token, igUserId, graphVersion, url, caption, post
         postToShareId: postToShareId
     });
 
-    // Step 3: Retrieve permalink of published media
-    const fetchResponse = await fetchInstagramMedia({
-        token: token,
-        graphVersion: graphVersion,
-        mediaId: mediaId,
-        fields: 'permalink'
-    });
-
     return { creationId, mediaId, permalink: fetchResponse.permalink };
 }
 
