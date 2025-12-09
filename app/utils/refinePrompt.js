@@ -93,7 +93,7 @@ function extractTextFromGeminiResult(result) {
  * @returns {Promise<string>} Generated text from Gemini
  */
 async function geminiGenerateText({ instruction }) {
-    const genModel = getGeminiClient().getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.5-flash' });
+    const genModel = getGeminiClient().getGenerativeModel({ model: process.env.DEFAULT_MODEL || 'gemini-2.5-flash' });
     const result = await genModel.generateContent(instruction);
     return extractTextFromGeminiResult(result);
 }
