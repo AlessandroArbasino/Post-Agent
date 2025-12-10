@@ -119,6 +119,8 @@ const manageCarouselPublish = async ({ token, igUserId, graphVersion, imageUrls,
         childrenIds.push(id);
     }
 
+    console.log('Children IDs:', childrenIds);
+
     const creationId = await createInstagramMedia({
         token: token,
         igUserId: igUserId,
@@ -127,6 +129,8 @@ const manageCarouselPublish = async ({ token, igUserId, graphVersion, imageUrls,
         childrenIds: childrenIds,
         caption: caption
     });
+
+    console.log('Creation ID:', creationId);
 
     let pollResult = await pollCreationStatus({
         token: token,
@@ -143,6 +147,8 @@ const manageCarouselPublish = async ({ token, igUserId, graphVersion, imageUrls,
         creationId: creationId,
         caption: caption
     });
+
+    console.log('Media ID:', mediaId);
 
     return { creationId, mediaId };
 };
