@@ -7,10 +7,10 @@ const cloudinary = require('cloudinary').v2;
 
 // Cloudinary configuration
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true
 });
 
 /**
@@ -20,15 +20,15 @@ cloudinary.config({
  * @returns {Promise<{success:boolean, publicUrl?:string, cloudinaryData?:any, error?:string}>}
  */
 const uploadToCloudinary = async (imageUrl, options = {}) => {
-    const result = await cloudinary.uploader.upload(imageUrl, {
-        resource_type: 'image',
-        folder: options.folder || process.env.CLOUDINARY_FOLDER || undefined,
-        public_id: options.publicId || undefined,
-        overwrite: true,
-    });
+  const result = await cloudinary.uploader.upload(imageUrl, {
+    resource_type: 'image',
+    folder: options.folder || process.env.CLOUDINARY_FOLDER || undefined,
+    public_id: options.publicId || undefined,
+    overwrite: true,
+  });
 
-    console.log('✅ Cloudinary upload completed:', result.secure_url);
-    return { success: true, publicUrl: result.secure_url, cloudinaryData: result };
+  console.log('✅ Cloudinary upload completed:', result.secure_url);
+  return { success: true, publicUrl: result.secure_url, cloudinaryData: result };
 };
 
 /**
@@ -42,7 +42,7 @@ const deleteFolder = async (path) => {
     await cloudinary.api.delete_resources_by_prefix(path, { ...opts, resource_type: 'image' })
     await cloudinary.api.delete_resources_by_prefix(path, { ...opts, resource_type: 'video' })
     await cloudinary.api.delete_resources_by_prefix(path, { ...opts, resource_type: 'raw' })
-  } catch (_) {}
+  } catch (_) { }
 
   const deleteEmptySubfolders = async (p) => {
     let res
@@ -54,7 +54,7 @@ const deleteFolder = async (path) => {
     const folders = res.folders || []
     for (const f of folders) {
       await deleteEmptySubfolders(f.path)
-      try { await cloudinary.api.delete_folder(f.path) } catch (_) {}
+      try { await cloudinary.api.delete_folder(f.path) } catch (_) { }
     }
   }
 
@@ -77,7 +77,7 @@ const deleteFolder = async (path) => {
  */
 const labeledImageUrl = async (url, label, opts = {}) => {
   const size = opts.size ?? 512
-  const margin = opts.margin ?? 12
+  const margin = opts.margin ?? 24
   const fontSize = opts.fontSize ?? 28
   const fontFamily = opts.fontFamily ?? 'Arial'
   const fontWeight = opts.fontWeight ?? 'bold'
@@ -90,16 +90,15 @@ const labeledImageUrl = async (url, label, opts = {}) => {
         font_family: fontFamily,
         font_weight: fontWeight,
         font_size: fontSize,
-        text: `#${label}`,
+        text: `${label}`,
       },
       color: textColor,
-      gravity: 'south_west',
-      x: margin,
+      gravity: 'south',
       y: margin,
     },
   ]
 
-   const urlTransformed = cloudinary.url(url, {
+  const urlTransformed = cloudinary.url(url, {
     type: 'fetch',
     secure: false,
     transformation
@@ -111,7 +110,7 @@ const labeledImageUrl = async (url, label, opts = {}) => {
 }
 
 module.exports = {
-    uploadToCloudinary,
-    deleteFolder,
-    labeledImageUrl
+  uploadToCloudinary,
+  deleteFolder,
+  labeledImageUrl
 };

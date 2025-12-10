@@ -312,7 +312,7 @@ async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText, topi
 
     for (let i = 0; i < g.length; i++) {
       const url = g[i]
-      const label = ++globalIndex
+      const label = `Image number: ${++globalIndex}`;
       const transformed = await labeledImageUrl(url, label)
 
       media.push({ type: 'photo', media: transformed })
