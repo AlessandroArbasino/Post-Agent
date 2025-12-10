@@ -100,6 +100,8 @@ const managePublish = async ({ token, igUserId, graphVersion, url, caption, post
 const manageCarouselPublish = async ({ token, igUserId, graphVersion, imageUrls, caption = '' }) => {
     const childrenIds = [];
     for (const url of imageUrls) {
+
+        console.log('URL:', url);
         const id = await createInstagramMedia({
             token: token,
             igUserId: igUserId,
@@ -107,6 +109,8 @@ const manageCarouselPublish = async ({ token, igUserId, graphVersion, imageUrls,
             isCarouselItem: true,
             url: url
         });
+
+        console.log('ID:', id);
 
         let pollResult = await pollCreationStatus({
             token: token,
