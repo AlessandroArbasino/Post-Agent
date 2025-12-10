@@ -7,27 +7,28 @@ export const maxDuration = 60;
 
 installGlobalErrorHandlers();
 
-async function handler(request) {
+const handler = async (request) => {
+  const rawBody = await request.text();
+
+  let body;
   try {
-    const rawBody = await request.text();
-
-    let body;
-    try {
-      body = rawBody ? JSON.parse(rawBody) : {};
-    } catch (e) {
-      body = {};
-    } 
-
-    const videoUrl = body?.event_data?.url;
-    if (!videoUrl) {
-      return NextResponse.json({ error: 'Missing field: video_url' }, { status: 400 });
-    }
-
-    await manageVideoCallback({url : videoUrl})
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    body = rawBody ? JSON.parse(rawBody) : {};
+  } catch (e) {
+    body = {};
   }
+
+  console.log('Body:', body);
+
+  const videoUrl = body?.event_data?.url;
+
+  console.log('Video URL:', videoUrl);
+
+  if (!videoUrl) {
+    return NextResponse.json({ error: 'Missing field: video_url' }, { status: 400 });
+  }
+
+  await manageVideoCallback({ url: videoUrl })
+  return NextResponse.json({ success: true });
 }
 
 export const POST = await withErrorReporting(handler, { operation: 'video_callback' });

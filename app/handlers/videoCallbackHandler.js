@@ -15,6 +15,8 @@ const manageVideoCallback = async ({ videoUrl }) => {
     throw new Error('Missing field: video_url');
   }
 
+  console.log('Video URL:', videoUrl);
+
   await publishToInstagram({ url: videoUrl, caption: '', mediaType: 'REELS', isVideo: true });
 
   const imageAssetId = await getVideoAssetIdByType({ type: process.env.HEYGEN_IMAGE_ASSET_TYPE });
