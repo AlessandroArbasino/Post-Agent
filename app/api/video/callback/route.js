@@ -23,10 +23,6 @@ const handler = async (request) => {
 
   console.log('Video URL:', videoUrl);
 
-  if (!videoUrl) {
-    return NextResponse.json({ error: 'Missing field: video_url' }, { status: 400 });
-  }
-
   await manageVideoCallback({ url: videoUrl })
   return NextResponse.json({ success: true });
 }
