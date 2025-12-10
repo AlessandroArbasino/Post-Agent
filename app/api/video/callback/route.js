@@ -23,7 +23,7 @@ const handler = async (request) => {
 
   console.log('Video URL:', videoUrl);
 
-  await manageVideoCallback({ url: videoUrl })
+  await manageVideoCallback({ videoUrl: videoUrl })
   return NextResponse.json({ success: true });
 }
 
