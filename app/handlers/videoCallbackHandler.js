@@ -11,10 +11,6 @@ const { deleteAssetImage, deleteAssetvideo } = require('../utils/generateVideo')
  * @throws {Error} If videoUrl is missing
  */
 const manageVideoCallback = async ({ videoUrl }) => {
-  if (!videoUrl) {
-    throw new Error('Missing field: video_url');
-  }
-
   console.log('Video URL:', videoUrl);
 
   await publishToInstagram({ url: videoUrl, caption: '', mediaType: 'REELS', isVideo: true });
