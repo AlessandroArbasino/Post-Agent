@@ -44,6 +44,8 @@ const publishCarouselToInstagram = async ({ secondImageUrl, caption = '' }) => {
 
     const defaultImageUrl = process.env.INSTAGRAM_DEFAULT_WINNING_IMAGE_URL;
 
+    console.log('Caption:', caption);
+
     const { creationId, mediaId } = await manageCarouselPublish({
         token: instagramConfig.token,
         igUserId: findEnvVariable('IG_USER_ID'),
@@ -135,6 +137,7 @@ const manageCarouselPublish = async ({ token, igUserId, graphVersion, imageUrls,
     });
 
     console.log('Creation ID:', creationId);
+    console.log('Caption:', caption);
 
     let pollResult = await pollCreationStatus({
         token: token,
@@ -148,8 +151,7 @@ const manageCarouselPublish = async ({ token, igUserId, graphVersion, imageUrls,
         token: token,
         igUserId: igUserId,
         graphVersion: graphVersion,
-        creationId: creationId,
-        caption: caption
+        creationId: creationId
     });
 
     console.log('Media ID:', mediaId);
