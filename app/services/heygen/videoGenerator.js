@@ -38,7 +38,7 @@ const generateVideoHeygen = async ({ backgroundUrl, backgroundAssetId, speechTex
           talking_style: 'stable',
           super_resolution: false,
           expression: 'happy',
-          matting: false,
+          matting: true,
           offset: { x: -0.3, y: 0 },
         },
         voice: {
@@ -53,22 +53,21 @@ const generateVideoHeygen = async ({ backgroundUrl, backgroundAssetId, speechTex
         },
         background: {
           type: 'image',
-          value: '#FFFFFF',
+          url: backgroundUrl,
           play_style: 'freeze',
-          fit: 'crop',
-          url: backgroundUrl
+          fit: 'crop'
         },
         text: {
-          type: "text",
-          text: "Welcome to HeyGen",
-          font_family: "Arial",
+          type: 'text',
+          text: 'Welcome to HeyGen',
+          font_family: 'Arial',
           font_size: 10,
-          font_weight: "bold",
+          font_weight: 'bold',
           position: {
-            "x": 0.5,
-            "y": 0
+            x: 0.5,
+            y: 0
           },
-          text_align: "left",
+          text_align: 'left',
           line_height: 1
         }
       }
