@@ -51,14 +51,17 @@ const publishWinner = async(topicId) => {
     return { error: 'No images available to publish', status: 404 }
   }
   //Publish the presentation image as Instagram Story to announce the winner
-  await publishToInstagram({url : process.env.INSTAGRAM_DEFAULT_END_VOTING_STORY_URL, caption : '', mediaType : 'STORIES',isVideo : true})
+  //Removed to reduce computation time for vercel hobby plan
+  //await publishToInstagram({url : process.env.INSTAGRAM_DEFAULT_END_VOTING_STORY_URL, caption : '', mediaType : 'STORIES',isVideo : true})
   //Publish the winner image as Instagram Story
-  const publishResult = await publishToInstagram({url : top.image_url, caption : '', mediaType : 'STORIES'})
+  const publishResult = await publishToInstagram({ url: top.image_url, caption: '', mediaType: 'STORIES' })
 
-const caption =  generateInstagramCaption({refinedPrompt: process.env.WINNING_CAROUSEL_CAPTION_TEMPLATE,
-    maxHashtags: parseInt(process.env.CAPTION_MAX_HASHTAGS || '5', 10) });
+  const caption = generateInstagramCaption({
+    refinedPrompt: process.env.WINNING_CAROUSEL_CAPTION_TEMPLATE,
+    maxHashtags: parseInt(process.env.CAPTION_MAX_HASHTAGS || '5', 10)
+  });
   //Publish the winner image as Instagram Carousel
-  await publishCarouselToInstagram({secondImageUrl : top.image_url, caption : caption})
+  await publishCarouselToInstagram({ secondImageUrl: top.image_url, caption: caption.geminiResponse })
 
   await sendWinnerNotification({ photoUrl: top.image_url, permalink: publishResult.permalink, parseMode: undefined, topicId })
 
