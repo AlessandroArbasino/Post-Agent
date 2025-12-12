@@ -1,5 +1,5 @@
-const { convertWebPToPng } = require('./imageConvert');
-const { generateSpeech } = require('./refinePrompt');
+const { convertWebPToPng } = require('../common/imageProcessor');
+const { generateSpeech } = require('../ai/promptRefiner');
 
 /**
  * Generates a video with avatar using HeyGen API.

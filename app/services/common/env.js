@@ -5,7 +5,7 @@ let _pageName = '';
  * Sets the current Instagram page name for multi-page support.
  * @param {string} name - The Instagram page name to set
  */
-function setPageName(name) {
+const setPageName = (name) => {
   _pageName = name;
 }
 
@@ -15,7 +15,7 @@ function setPageName(name) {
  * @param {string} name - The base name of the environment variable
  * @returns {string|undefined} The environment variable value, or undefined if not found
  */
-function findEnvVariable(name) {
+const findEnvVariable = (name) => {
   return process.env[name + '_' + _pageName] ?? process.env[name]
 }
 

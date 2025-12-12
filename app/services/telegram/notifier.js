@@ -4,15 +4,15 @@
  * - Message templates are in .env and support dynamic parameters {0},{1},{2},{3}
  */
 
-const {markAllSentNow} = require('../db/dbClient')
-const {labeledImageUrl} = require('./uploadToCloudinary')
-const {insertTelegramMessage} = require('../db/dbClient')
+const { markAllSentNow } = require('../../db/dbClient')
+const { labeledImageUrl } = require('../cloudinary/uploader')
+const { insertTelegramMessage } = require('../../db/dbClient')
 /**
  * Replaces {0},{1},{2},{3} in the template with provided values
  * @param {string} template
  * @param {Array<string>} params
  */
-function formatTemplate(template = '', params = []) {
+const formatTemplate = (template = '', params = []) => {
   return template
     .replaceAll('{0}', params[0] ?? '')
     .replaceAll('{1}', params[1] ?? '')
@@ -28,7 +28,7 @@ function formatTemplate(template = '', params = []) {
  * @param {string} options.text - Message text
  * @param {string} [options.parseMode] - MarkdownV2 | Markdown | HTML
  */
-async function sendTelegramText({ token, chatId, text, parseMode, topicId }) {
+const sendTelegramText = async ({ token, chatId, text, parseMode, topicId }) => {
   const url = `https://api.telegram.org/bot${encodeURIComponent(token)}/sendMessage`;
   const body = {
     chat_id: chatId,
@@ -58,7 +58,7 @@ async function sendTelegramText({ token, chatId, text, parseMode, topicId }) {
  * @param {string} [options.caption] - Caption
  * @param {string} [options.parseMode] - MarkdownV2 | Markdown | HTML
  */
-async function sendTelegramPhoto({ token, chatId, photo, caption, parseMode, topicId }) {
+const sendTelegramPhoto = async ({ token, chatId, photo, caption, parseMode, topicId }) => {
   const url = `https://api.telegram.org/bot${encodeURIComponent(token)}/sendPhoto`;
   const body = {
     chat_id: chatId,
@@ -92,42 +92,42 @@ async function sendTelegramPhoto({ token, chatId, photo, caption, parseMode, top
  * @param {string} [payload.permalink] - Public link to the Instagram post
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-async function sendTelegramNotification({ status, imageUrl, originalPrompt, error, permalink, topicId, overrideBotToken, overrideChatId }) {
-    const token = overrideBotToken || process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = overrideChatId || process.env.TELEGRAM_CHAT_ID;
-    const parseMode = process.env.TELEGRAM_PARSE_MODE || undefined; // opzionale
+const sendTelegramNotification = async ({ status, imageUrl, originalPrompt, error, permalink, topicId, overrideBotToken, overrideChatId }) => {
+  const token = overrideBotToken || process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = overrideChatId || process.env.TELEGRAM_CHAT_ID;
+  const parseMode = process.env.TELEGRAM_PARSE_MODE || undefined; // opzionale
 
-    if (!token || !chatId) {
-      return { success: false, error: 'TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured' };
-    }
+  if (!token || !chatId) {
+    return { success: false, error: 'TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured' };
+  }
 
-    // Recupero template da .env
-    const successTpl = process.env.TELEGRAM_SUCCESS_TEMPLATE || 'Pipeline OK\nOriginal: {0}\nLink: {1}';
-    const failureTpl = process.env.TELEGRAM_FAILURE_TEMPLATE || 'Pipeline KO\nError: {0}\n';
+  // Recupero template da .env
+  const successTpl = process.env.TELEGRAM_SUCCESS_TEMPLATE || 'Pipeline OK\nOriginal: {0}\nLink: {1}';
+  const failureTpl = process.env.TELEGRAM_FAILURE_TEMPLATE || 'Pipeline KO\nError: {0}\n';
 
-    // Parametri dinamici per i template
-    const successParams = [originalPrompt || '', permalink || ''];
-    const failureParams = [error || ''];
+  // Parametri dinamici per i template
+  const successParams = [originalPrompt || '', permalink || ''];
+  const failureParams = [error || ''];
 
-    if (status === 'success') {
-      // Se abbiamo un'immagine, inviamo la foto con caption formattata; altrimenti testo
-      if (imageUrl) {
-        const captionText = formatTemplate(successTpl, successParams);
-        await sendTelegramPhoto({ token, chatId, photo: imageUrl, caption: captionText, parseMode, topicId });
-        return { success: true };
-      } else {
-        const text = formatTemplate(successTpl, successParams);
-        await sendTelegramText({ token, chatId, text, parseMode, topicId });
-        return { success: true };
-      }
+  if (status === 'success') {
+    // Se abbiamo un'immagine, inviamo la foto con caption formattata; altrimenti testo
+    if (imageUrl) {
+      const captionText = formatTemplate(successTpl, successParams);
+      await sendTelegramPhoto({ token, chatId, photo: imageUrl, caption: captionText, parseMode, topicId });
+      return { success: true };
     } else {
-      const text = formatTemplate(failureTpl, failureParams);
+      const text = formatTemplate(successTpl, successParams);
       await sendTelegramText({ token, chatId, text, parseMode, topicId });
       return { success: true };
     }
+  } else {
+    const text = formatTemplate(failureTpl, failureParams);
+    await sendTelegramText({ token, chatId, text, parseMode, topicId });
+    return { success: true };
+  }
 }
 
-async function deleteMessageById({ telegramMessageId }) {
+const deleteMessageById = async ({ telegramMessageId }) => {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) throw new Error('TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured');
@@ -152,7 +152,7 @@ async function deleteMessageById({ telegramMessageId }) {
   return data
 }
 
-async function editMessageToPlainText({ telegramMessageId, template }) {
+const editMessageToPlainText = async ({ telegramMessageId, template }) => {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -182,7 +182,7 @@ async function editMessageToPlainText({ telegramMessageId, template }) {
   return data
 }
 
-async function sendWinnerNotification({ photoUrl,permalink, parseMode, topicId }) {
+const sendWinnerNotification = async ({ photoUrl, permalink, parseMode, topicId }) => {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   const mode = parseMode || process.env.TELEGRAM_PARSE_MODE || undefined;
@@ -201,7 +201,7 @@ async function sendWinnerNotification({ photoUrl,permalink, parseMode, topicId }
  * Edit the caption of a media message (photo/video) by message id.
  * Use this for messages sent via sendPhoto/sendMediaGroup items.
  */
-async function editMediaCaption({ telegramMessageId, caption, parseMode }) {
+const editMediaCaption = async ({ telegramMessageId, caption, parseMode }) => {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) throw new Error('TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured');
@@ -235,19 +235,19 @@ async function editMediaCaption({ telegramMessageId, caption, parseMode }) {
  * @param {Array<Array<{text:string, url:string}>>} rows - Inline keyboard rows
  * @returns {Promise<any>} - Telegram API response for the sendMessage call
  */
-async function sendMessageWithInlineKeyboard(urls, rows, topicId) {
+const sendMessageWithInlineKeyboard = async (urls, rows, topicId) => {
   const header = process.env.TELEGRAM_GROUP_IMAGE_HEADER
   const mediaMessageId = await sendAnnotatedMediaGroupsWithOptionalHeader(urls, header, topicId)
   if (mediaMessageId && process.env.DATABASE_URL) {
-    await insertTelegramMessage(String(mediaMessageId), 'voting_media') 
+    await insertTelegramMessage(String(mediaMessageId), 'voting_media')
   }
 
   const text = process.env.TELEGRAM_KEYBOARD_HEADER
   const inlineKeyboradMessageId = await sendInlineKeyboard(text, rows, topicId)
   if (inlineKeyboradMessageId && process.env.DATABASE_URL) {
-    await insertTelegramMessage(String(inlineKeyboradMessageId), 'voting_keyboard') 
+    await insertTelegramMessage(String(inlineKeyboradMessageId), 'voting_keyboard')
   }
-  
+
   await markAllSentNow()
   return { mediaMessageId, inlineKeyboradMessageId }
 }
@@ -258,7 +258,7 @@ async function sendMessageWithInlineKeyboard(urls, rows, topicId) {
  * @param {Array<Array<{text:string, url:string}>>} rows - Inline keyboard rows
  * @returns {Promise<any>} - Telegram API response JSON
  */
-async function sendInlineKeyboard(text, rows, topicId) {
+const sendInlineKeyboard = async (text, rows, topicId) => {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -290,7 +290,7 @@ async function sendInlineKeyboard(text, rows, topicId) {
  * @param {string} [headerText] - Optional caption for the first image of the first group
  * @returns {Promise<number|null>} - message_id of the first media message sent (first group's first item)
  */
-async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText, topicId) {
+const sendAnnotatedMediaGroupsWithOptionalHeader = async (urls, headerText, topicId) => {
   if (!urls || urls.length === 0) throw new Error('No images to send')
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -328,7 +328,7 @@ async function sendAnnotatedMediaGroupsWithOptionalHeader(urls, headerText, topi
       body: JSON.stringify({ chat_id: chatId, media, message_thread_id: topicId }),
     })
 
-    
+
     if (!resp.ok) {
       const txt = await resp.text()
       throw new Error(`Telegram sendMediaGroup (annotated) failed: ${resp.status} ${txt}`)

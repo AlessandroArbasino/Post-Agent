@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-const {installGlobalErrorHandlers, withErrorReporting} = require('../../utils/errorMiddleware')
-const { setPageName } = require('../../utils/envUtils');
+const { installGlobalErrorHandlers, withErrorReporting } = require('../../services/middleware/error')
+const { setPageName } = require('../../services/common/env');
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -8,7 +8,7 @@ export const maxDuration = 60;
 // Install global error handlers once per process
 installGlobalErrorHandlers();
 
-async function handler() {
+const handler = async () => {
   try {
     // Import compatible with CommonJS (postHandler uses module.exports)
     const mod = await import('../../handlers/postHandler');

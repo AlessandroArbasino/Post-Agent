@@ -1,18 +1,18 @@
 const { getAllImageForVoting } = require('../db/dbClient');
-const { votingCron, publishWinner } = require('../utils/votingCron');
+const { votingCron, publishWinner } = require('../services/cron/votingJob');
 
 /**
  * Orchestrates the voting flow.
  * If no images were previously sent, triggers voting flow; otherwise publishes the winner.
  * @returns {Promise<{action:'voting'|'publish'} & Record<string, any>>}
  */
-const voteHandler = async() => {
+const voteHandler = async () => {
   const images = await getAllImageForVoting()
 
-  if(images.length === 0) {
+  if (images.length === 0) {
     throw new Error('No images available to vote on');
   }
-  
+
   const anySent = Array.isArray(images) && images.some((i) => i.sent_date)
 
   let result = null
@@ -26,4 +26,4 @@ const voteHandler = async() => {
 }
 
 module.exports = { voteHandler };
-  
+

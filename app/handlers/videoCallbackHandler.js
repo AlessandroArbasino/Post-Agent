@@ -1,6 +1,6 @@
-const { publishToInstagram } = require('../utils/publishToInstagram');
+const { publishToInstagram } = require('../services/instagram/publisher');
 const { getVideoAssetIdByType, toggleVideoAsset } = require('../db/dbClient');
-const { deleteAssetImage, deleteAssetvideo } = require('../utils/generateVideo');
+const { deleteAssetImage, deleteAssetvideo } = require('../services/heygen/videoGenerator');
 
 /**
  * Manages the callback from HeyGen when video generation is complete.

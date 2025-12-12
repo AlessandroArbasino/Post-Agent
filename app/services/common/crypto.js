@@ -12,7 +12,7 @@ const crypto = require("crypto");
  * @returns {Buffer} A 32-byte encryption key
  * @throws {Error} If TOKENS_CRYPTO_KEY is not configured
  */
-function getKey() {
+const getKey = () => {
   const raw = process.env.TOKENS_CRYPTO_KEY;
   if (!raw) {
     throw new Error("TOKENS_CRYPTO_KEY not configured. Provide a 32-byte key (base64 or hex)");
@@ -22,13 +22,13 @@ function getKey() {
   try {
     const b64 = Buffer.from(raw, "base64");
     if (b64.length === 32) return b64;
-  } catch (_) {}
+  } catch (_) { }
 
   // Then try hex
   try {
     const hex = Buffer.from(raw, "hex");
     if (hex.length === 32) return hex;
-  } catch (_) {}
+  } catch (_) { }
 
   // As a last resort, derive a 32-byte key from the provided string via scrypt
   // This allows using a passphrase, but base64/hex 32-byte key is recommended.
@@ -41,7 +41,7 @@ function getKey() {
  * @returns {string} Encrypted token in the format: base64(iv).base64(ciphertext).base64(tag)
  * @throws {Error} If plaintext is not a string
  */
-function encryptToken(plaintext) {
+const encryptToken = (plaintext) => {
   if (typeof plaintext !== "string") {
     throw new Error("encryptToken requires a string");
   }
@@ -59,7 +59,7 @@ function encryptToken(plaintext) {
  * @returns {string} The decrypted plaintext token
  * @throws {Error} If the encrypted token format is invalid
  */
-function decryptToken(pack) {
+const decryptToken = (pack) => {
 
   if (typeof pack !== "string" || pack.split(".").length !== 3) {
     throw new Error("Invalid encrypted token format");

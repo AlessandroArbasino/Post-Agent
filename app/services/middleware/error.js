@@ -1,5 +1,5 @@
 // Error middleware/wrapper for Next.js route handlers that reports to Telegram
-// Uses existing app/utils/telegramNotifier.js (CommonJS)
+// Uses existing app/services/telegram/notifier.js (CommonJS)
 
 /**
  * Install global process-level error handlers once per process.
@@ -11,7 +11,7 @@ const installGlobalErrorHandlers = () => {
 
   const report = async (title, err) => {
     try {
-      const mod = await import('./telegramNotifier.js');
+      const mod = await import('../telegram/notifier.js');
       const sendTelegramNotification = mod.sendTelegramNotification || (mod.default && mod.default.sendTelegramNotification);
       if (typeof sendTelegramNotification === 'function') {
         const errorText = err && err.stack ? err.stack : String(err);
@@ -46,20 +46,20 @@ const withErrorReporting = (handler, options = {}) => {
       return await handler(request, ...rest);
     } catch (err) {
       try {
-        const mod = await import('./telegramNotifier.js');
+        const mod = await import('../telegram/notifier.js');
 
         const sendTelegramNotification = mod.sendTelegramNotification || (mod.default && mod.default.sendTelegramNotification);
-          await sendTelegramNotification({
-                status: 'error',
-                imageUrl: null,
-                caption: null,
-                //originalPrompt: err.context?.originalPrompt,
-                //refinedPrompt: err.context?.refinedPrompt,
-                error: err.message, 
-                permalink: null,
-                overrideBotToken: process.env.ERROR_LOGS_BOT_TOKEN,
-                overrideChatId: process.env.ERROR_LOGS_CHAT_ID
-          });
+        await sendTelegramNotification({
+          status: 'error',
+          imageUrl: null,
+          caption: null,
+          //originalPrompt: err.context?.originalPrompt,
+          //refinedPrompt: err.context?.refinedPrompt,
+          error: err.message,
+          permalink: null,
+          overrideBotToken: process.env.ERROR_LOGS_BOT_TOKEN,
+          overrideChatId: process.env.ERROR_LOGS_CHAT_ID
+        });
       } catch (_) {
         // ignore notification errors
       }
@@ -72,7 +72,6 @@ const withErrorReporting = (handler, options = {}) => {
 }
 
 module.exports = {
-    installGlobalErrorHandlers,
-    withErrorReporting
+  installGlobalErrorHandlers,
+  withErrorReporting
 }
-    

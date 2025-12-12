@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { Telegraf } from 'telegraf'
 import { createHash } from 'crypto'
-const { updateVote, getAllImageForVoting, getVotingUser, insertVotingUser,updateVotingUser } = require('../../db/dbClient')
-const { formatTemplate } = require('../../utils/telegramNotifier')
+const { updateVote, getAllImageForVoting, getVotingUser, insertVotingUser, updateVotingUser } = require('../../db/dbClient')
+const { formatTemplate } = require('../../services/telegram/notifier')
 
 export const runtime = 'nodejs'
 
@@ -10,7 +10,7 @@ export const runtime = 'nodejs'
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN)
 
 // Helper to compute a short stable hash for callback_data
-function shortHash(input) {
+const shortHash = (input) => {
   return createHash('sha1').update(String(input)).digest('hex').slice(0, 12)
 }
 
@@ -22,7 +22,7 @@ bot.on('callback_query', async (ctx) => {
       const h = data.slice('vote:'.length)
       // Prevent duplicate votes per Telegram user
       const voterId = ctx.from?.id || ctx.callbackQuery?.from?.id
-      
+
       const images = await getAllImageForVoting()
       const match = images.find((it) => shortHash(it.image_url) === h)
 
@@ -31,24 +31,24 @@ bot.on('callback_query', async (ctx) => {
         return
       }
       if (voterId) {
-          const existing = await getVotingUser(String(voterId))
-          if (existing) {
-            const previosVotingImage = images.find((it) => it.voting_number === existing.voted_image_number);
-            if(previosVotingImage.voting_number !== match.voting_number){
+        const existing = await getVotingUser(String(voterId))
+        if (existing) {
+          const previosVotingImage = images.find((it) => it.voting_number === existing.voted_image_number);
+          if (previosVotingImage.voting_number !== match.voting_number) {
             await updateVote(previosVotingImage.image_url, -1);
-            await updateVotingUser(String(voterId),match.voting_number);
+            await updateVotingUser(String(voterId), match.voting_number);
             await updateVote(match.image_url, 1)
             await ctx.answerCbQuery('Your vote has changed from image number ' + previosVotingImage.voting_number + ' to image number ' + match.voting_number, { show_alert: true })
-            }else{
-              await ctx.answerCbQuery('You have already voted for this image', { show_alert: true })
-            }
-          }else{
-            await insertVotingUser(String(voterId),match.voting_number);
-            await updateVote(match.image_url, 1)
-            await ctx.answerCbQuery(`Thank you for voting image number ${match.voting_number}!`, { show_alert: true })
+          } else {
+            await ctx.answerCbQuery('You have already voted for this image', { show_alert: true })
           }
+        } else {
+          await insertVotingUser(String(voterId), match.voting_number);
+          await updateVote(match.image_url, 1)
+          await ctx.answerCbQuery(`Thank you for voting image number ${match.voting_number}!`, { show_alert: true })
+        }
       }
-    }else{
+    } else {
       await ctx.answerCbQuery('Data does not begin with "vote:", please try again', { show_alert: true })
     }
   } catch (e) {

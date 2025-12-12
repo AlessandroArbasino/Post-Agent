@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { withErrorReporting, installGlobalErrorHandlers } from '../../utils/errorMiddleware';
+import { withErrorReporting, installGlobalErrorHandlers } from '../../services/middleware/error';
 
 export const runtime = 'nodejs';
 
 // Install global handlers (idempotent)
 installGlobalErrorHandlers();
 
-async function handler() {
+const handler = async () => {
   return NextResponse.json(
     {
       ok: true,

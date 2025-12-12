@@ -92,9 +92,12 @@ const labeledImageUrl = async (url, label, opts = {}) => {
         font_size: fontSize,
         text: `${label}`,
       },
-      color: textColor,
+      color: '#000000',
+      background: '#FFFFFF',
       gravity: 'south',
       y: margin,
+      border: '20px_solid_rgb:262626',
+      radius: 20
     },
   ]
 

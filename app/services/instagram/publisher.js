@@ -3,9 +3,9 @@
  * Handles media container creation and publishing
  */
 
-const { getInstagramConfig } = require('../db/dbClient');
-const { instagramCalculateRefreshToken, createInstagramMedia, fetchInstagramMedia, publishInstagramMedia, pollCreationStatus } = require('../utils/instagramUtility');
-const { findEnvVariable } = require('./envUtils');
+const { getInstagramConfig } = require('../../db/dbClient');
+const { instagramCalculateRefreshToken, createInstagramMedia, fetchInstagramMedia, publishInstagramMedia, pollCreationStatus } = require('./client');
+const { findEnvVariable } = require('../common/env');
 
 /**
  * Publish an image to Instagram

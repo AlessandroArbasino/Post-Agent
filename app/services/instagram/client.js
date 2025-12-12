@@ -1,6 +1,6 @@
 const fetch = (...args) => (globalThis.fetch ? globalThis.fetch(...args) : import('node-fetch').then(({ default: f }) => f(...args)));
-const { getInstagramConfig } = require('../db/dbClient');
-const { manageLongLiveToken } = require('../utils/instagramToken');
+const { getInstagramConfig } = require('../../db/dbClient');
+const { manageLongLiveToken } = require('./tokenManager');
 
 /**
  * Calculates if Instagram token needs refresh and refreshes it if necessary.

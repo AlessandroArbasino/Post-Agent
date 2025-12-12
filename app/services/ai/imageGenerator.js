@@ -9,7 +9,7 @@ const fs = require('fs').promises;
 
 
 // Private function: download an image URL and return a data URI
-async function _bufferFromUrlViaDataUri(src) {
+const _bufferFromUrlViaDataUri = async (src) => {
   const res = await fetch(src);
   const base64 = Buffer.from(await res.arrayBuffer()).toString('base64');
   const contentType = res.headers.get('content-type') || 'image/webp';
@@ -21,7 +21,7 @@ async function _bufferFromUrlViaDataUri(src) {
  * Download an image from URL or data URL and return a Buffer
  * @param {string} src - http(s) URL or data URL (data:image/png;base64,....)
  */
-async function getImageBufferFromSource(src) {
+const getImageBufferFromSource = async (src) => {
   if (!src) throw new Error('invalid image source');
   console.log('src: ' + src);
   // data URL
@@ -38,7 +38,7 @@ async function getImageBufferFromSource(src) {
  * @param {any} result - result of client.predict
  * @returns {string|null}
  */
-function extractImageSourceFromGradioResult(result) {
+const extractImageSourceFromGradioResult = (result) => {
   // common pattern: result.data is an array and the first element contains the image
   const resultData = result?.data;
   if (!resultData) return null;
@@ -83,7 +83,7 @@ function extractImageSourceFromGradioResult(result) {
  * @param {boolean} [options.returnBuffer=false] - Se true scarica anche il buffer dell'immagine
  * @returns {Promise<{success:boolean, sourceUrl:string, buffer:Buffer|null, executionTime:string, settings:Object, error?:string}>}
  */
-async function generateImageGradio(prompt, options = {}) {
+const generateImageGradio = async (prompt, options = {}) => {
   const started = Date.now();
   try {
     // dynamic import per ESM client
@@ -140,7 +140,7 @@ async function generateImageGradio(prompt, options = {}) {
     return {
       success: true,
       sourceUrl: imgSrc,
-      sourceUri : imageUri,
+      sourceUri: imageUri,
       executionTime: `${executionTime}s`,
       settings: payload,
     };

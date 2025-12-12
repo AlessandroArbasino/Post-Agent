@@ -1,11 +1,11 @@
-const { sendMessageWithInlineKeyboard, sendWinnerNotification, editMessageToPlainText, editMediaCaption, deleteMessageById} = require('./telegramNotifier')
-const { getAllImageFolders, deleteAllVotingImages, deleteAllVotingUsers, getTelegramMessage , insertTelegramMessage, deleteTelegramMessage, toggleVideoAsset} = require('../db/dbClient')
-const { publishToInstagram, publishCarouselToInstagram, } = require('./publishToInstagram')
-const { deleteFolder } = require('./uploadToCloudinary')
-const { getBestPhoto } = require('./scoring')
-const { generateInstagramCaption } = require('./refinePrompt')
-const { insertVotingNumber } = require('../db/dbClient')
-const { generateVideo } = require('./generateVideo')
+const { sendMessageWithInlineKeyboard, sendWinnerNotification, editMessageToPlainText, editMediaCaption, deleteMessageById } = require('../telegram/notifier')
+const { getAllImageFolders, deleteAllVotingImages, deleteAllVotingUsers, getTelegramMessage, insertTelegramMessage, deleteTelegramMessage, toggleVideoAsset } = require('../../db/dbClient')
+const { publishToInstagram, publishCarouselToInstagram, } = require('../instagram/publisher')
+const { deleteFolder } = require('../cloudinary/uploader')
+const { getBestPhoto } = require('../voting/scoring')
+const { generateInstagramCaption } = require('../ai/promptRefiner')
+const { insertVotingNumber } = require('../../db/dbClient')
+const { generateVideo } = require('../heygen/videoGenerator')
 const crypto = require('crypto')
 
 /**
@@ -14,18 +14,18 @@ const crypto = require('crypto')
  * @param {Array<{image_url:string, [key:string]:any}>} images - List of images to vote on
  * @returns {Promise<{total:number, sent_buttons:number}>}
  */
-const votingCron = async(images, topicId) => {
+const votingCron = async (images, topicId) => {
   const shortHash = (s) => crypto.createHash('sha1').update(String(s)).digest('hex').slice(0, 12)
 
   // Process each image to create voting buttons and update voting numbers
   const rows = await Promise.all(images.map(async (u, i) => {
     const votingNumber = i + 1;
     // Update voting number in the database
-    await insertVotingNumber({ 
-      votingNumber : votingNumber || 0, 
-      imageUrl: u.image_url 
+    await insertVotingNumber({
+      votingNumber: votingNumber || 0,
+      imageUrl: u.image_url
     });
-    
+
     return [{
       text: `Vota #${votingNumber}`,
       callback_data: `vote:${shortHash(u.image_url)}`,
@@ -34,7 +34,7 @@ const votingCron = async(images, topicId) => {
 
   const imageurls = images.map((u) => u.image_url);
 
-  await publishToInstagram({url : process.env.INSTAGRAM_DEFAULT_START_VOTING_STORY_URL, caption : '', mediaType : 'STORIES',isVideo : true})
+  await publishToInstagram({ url: process.env.INSTAGRAM_DEFAULT_START_VOTING_STORY_URL, caption: '', mediaType: 'STORIES', isVideo: true })
   await sendMessageWithInlineKeyboard(imageurls, rows, topicId)
 
   return { total: images.length, sent_buttons: rows.length }
@@ -45,7 +45,7 @@ const votingCron = async(images, topicId) => {
  * Uses `getBestPhoto()` and posts as Instagram Story.
  * @returns {Promise<{ok:boolean, published:any, image_url:string, votes:number, caption:string} | {error:string, status:number}>}
  */
-const publishWinner = async(topicId) => {
+const publishWinner = async (topicId) => {
   const top = await getBestPhoto()
   if (!top) {
     return { error: 'No images available to publish', status: 404 }
@@ -72,10 +72,10 @@ const publishWinner = async(topicId) => {
 
   const keyboard = await getTelegramMessage('voting_keyboard')
   if (keyboard) {
-    await deleteMessageById({telegramMessageId: keyboard.telegram_message_id})
+    await deleteMessageById({ telegramMessageId: keyboard.telegram_message_id })
   }
 
-  const videoAssets = await generateVideo({backgroundUrl : top.image_url,caption : top.instagram_caption})
+  const videoAssets = await generateVideo({ backgroundUrl: top.image_url, caption: top.instagram_caption })
 
   if (process.env.CLOUDINARY_ENABLE_DELETE === 'true') {
     try {
@@ -94,9 +94,9 @@ const publishWinner = async(topicId) => {
 
   }
 
-  if(process.env.DATABASE_URL) {
-    await toggleVideoAsset({type: process.env.HEYGEN_IMAGE_ASSET_TYPE,videoAssetId : videoAssets.backgroundAssetId});
-    await toggleVideoAsset({type:process.env.HEYGEN_VIDEO_ASSET_TYPE,videoAssetId : videoAssets.videoId});
+  if (process.env.DATABASE_URL) {
+    await toggleVideoAsset({ type: process.env.HEYGEN_IMAGE_ASSET_TYPE, videoAssetId: videoAssets.backgroundAssetId });
+    await toggleVideoAsset({ type: process.env.HEYGEN_VIDEO_ASSET_TYPE, videoAssetId: videoAssets.videoId });
     await deleteAllVotingImages()
     await deleteAllVotingUsers()
     await deleteTelegramMessage('voting_media')
@@ -111,5 +111,5 @@ const publishWinner = async(topicId) => {
   }
 }
 
-module.exports = {votingCron, publishWinner };
+module.exports = { votingCron, publishWinner };
 

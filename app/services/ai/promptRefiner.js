@@ -3,8 +3,8 @@
  * Uses Gemini to improve and make prompts more descriptive
  */
 
-const { getGeminiClient } = require('./geminiClient');
-const { findEnvVariable } = require('./envUtils');
+const { getGeminiClient } = require('./gemini');
+const { findEnvVariable } = require('../common/env');
 
 /**
  * Generates a default prompt using Gemini AI.
@@ -74,7 +74,7 @@ const getGeminiPrompt = async ({ instruction } = {}) => {
  * @param {any} result
  * @returns {string}
  */
-function extractTextFromGeminiResult(result) {
+const extractTextFromGeminiResult = (result) => {
     return (
         result?.response?.text?.() ||
         (Array.isArray(result?.response?.candidates)
@@ -92,7 +92,7 @@ function extractTextFromGeminiResult(result) {
  * @param {string} params.instruction - The instruction/prompt for text generation
  * @returns {Promise<string>} Generated text from Gemini
  */
-async function geminiGenerateText({ instruction }) {
+const geminiGenerateText = async ({ instruction }) => {
     const genModel = getGeminiClient().getGenerativeModel({ model: process.env.DEFAULT_MODEL || 'gemini-2.5-flash' });
     const result = await genModel.generateContent(instruction);
     return extractTextFromGeminiResult(result);

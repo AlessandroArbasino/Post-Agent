@@ -1,5 +1,5 @@
 
-const { decryptToken, encryptToken } = require('../utils/crypto');
+const { decryptToken, encryptToken } = require('../services/common/crypto');
 /**
  * PostgreSQL client for Neon Database via Vercel Postgres
  * Manages connection and database queries

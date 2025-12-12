@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-const { installGlobalErrorHandlers, withErrorReporting } = require('../../../utils/errorMiddleware');
+const { installGlobalErrorHandlers, withErrorReporting } = require('../../../services/middleware/error');
 const { manageVideoCallback } = require('../../../handlers/videoCallbackHandler');
 
 export const runtime = 'nodejs';
