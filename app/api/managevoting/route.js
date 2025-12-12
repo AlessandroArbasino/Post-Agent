@@ -3,6 +3,7 @@ const { installGlobalErrorHandlers, withErrorReporting } = require('../../servic
 const { voteHandler } = require('../../handlers/voteHandler')
 
 export const runtime = 'nodejs'
+export const maxDuration = 60;
 
 // Install global error handlers once per process
 installGlobalErrorHandlers()
