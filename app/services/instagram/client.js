@@ -138,7 +138,7 @@ const publishInstagramMedia = async ({ token, igUserId, graphVersion, creationId
  * @returns {Promise<Object>} Media information object
  * @throws {Error} If fetching fails
  */
-const fetchInstagramMedia = async ({ token, graphVersion, mediaId, fields, currentAttempt = 0, maxAttempts = 5 }) => {
+const fetchInstagramMedia = async ({ token, graphVersion, mediaId, fields }) => {
     const res = await fetch(
         `https://graph.facebook.com/${graphVersion}/${mediaId}?fields=${encodeURIComponent(fields)}&access_token=${token}`,
         { method: 'GET' }
@@ -146,12 +146,12 @@ const fetchInstagramMedia = async ({ token, graphVersion, mediaId, fields, curre
     if (res.ok) {
         return await res.json();
     } else {
-        const txt = await res.text();
-        if (currentAttempt < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return fetchInstagramMedia({ token, graphVersion, mediaId, fields, currentAttempt: currentAttempt + 1, maxAttempts });
+        let body = {
+            permalink: fields.includes('permalink') ? process.env.INSTAGRAM_PAGE_URL : null,
+            likes_count: fields.includes('likes_count') ? 0 : null,
+            comments_count: fields.includes('comments_count') ? 0 : null
         }
-        throw new Error(`⚠️ Unable to obtain fields (${fields}): ${txt}`);
+        return body;
     }
 }
 

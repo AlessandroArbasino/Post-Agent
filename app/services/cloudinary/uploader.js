@@ -96,8 +96,8 @@ const labeledImageUrl = async (url, label, opts = {}) => {
       background: '#FFFFFF',
       gravity: 'south',
       y: margin,
-      border: '20px_solid_rgb:262626',
-      radius: 20
+      border: '2px_solid_rgb:262626',
+      radius: 5
     },
   ]
 
