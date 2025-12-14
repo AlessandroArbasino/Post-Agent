@@ -96,7 +96,7 @@ const managePublish = async ({ token, igUserId, graphVersion, url, caption, post
         fields: 'permalink'
     });
 
-    return { creationId, mediaId, permalink: fetchResponse.permalink };
+    return { creationId, mediaId, permalink: fetchResponse?.permalink };
 }
 
 const manageCarouselPublish = async ({ token, igUserId, graphVersion, imageUrls, caption = '' }) => {
