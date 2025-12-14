@@ -39,7 +39,7 @@ const generateVideoHeygen = async ({ backgroundUrl, backgroundAssetId, speechTex
           super_resolution: false,
           expression: 'happy',
           matting: true,
-          offset: { x: 0, y: -0.5 },
+          offset: { x: 0, y: 0 },
         },
         voice: {
           type: 'text',
@@ -55,7 +55,7 @@ const generateVideoHeygen = async ({ backgroundUrl, backgroundAssetId, speechTex
           type: 'image',
           url: backgroundUrl,
           play_style: 'freeze',
-          fit: 'cover'
+          fit: 'crop'
         }
       }
     ],

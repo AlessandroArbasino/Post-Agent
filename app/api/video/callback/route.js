@@ -20,10 +20,14 @@ const handler = async (request) => {
   console.log('Body:', body);
 
   const videoUrl = body?.event_data?.url;
+  const eventType = body?.event_type;
 
   console.log('Video URL:', videoUrl);
 
-  await manageVideoCallback({ videoUrl: videoUrl })
+  if (eventType === 'avatar_video.success') {
+    await manageVideoCallback({ videoUrl: videoUrl })
+  }
+
   return NextResponse.json({ success: true });
 }
 

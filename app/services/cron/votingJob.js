@@ -55,12 +55,8 @@ const publishWinner = async (topicId) => {
   //Publish the winner image as Instagram Story
   const publishResult = await publishToInstagram({ url: top.image_url, caption: '', mediaType: 'STORIES' })
 
-  const caption = generateInstagramCaption({
-    refinedPrompt: process.env.WINNING_CAROUSEL_CAPTION_TEMPLATE,
-    maxHashtags: parseInt(process.env.CAPTION_MAX_HASHTAGS || '5', 10)
-  });
   //Publish the winner image as Instagram Carousel
-  await publishCarouselToInstagram({ secondImageUrl: top.image_url, caption: caption.geminiResponse })
+  await publishCarouselToInstagram({ secondImageUrl: top.image_url, caption: process.env.WINNING_CAROUSEL_CAPTION_TEMPLATE })
 
   await sendWinnerNotification({ photoUrl: top.image_url, permalink: publishResult.permalink, parseMode: undefined, topicId })
 

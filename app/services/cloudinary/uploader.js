@@ -70,18 +70,16 @@ const deleteFolder = async (path) => {
  * @param {number} [opts.size=512] - Target square size (width/height)
  * @param {number} [opts.margin=12] - Margin from the bottom-left corner
  * @param {number} [opts.fontSize=28] - Overlay font size
- * @param {string} [opts.fontFamily='Arial'] - Overlay font family
+ * @param {string} [opts.fontFamily='Aileron'] - Overlay font family
  * @param {string} [opts.fontWeight='bold'] - Overlay font weight
- * @param {string} [opts.textColor='white'] - Overlay text color
  * @returns {Promise<string>} - Signed Cloudinary fetch URL with transformations
  */
 const labeledImageUrl = async (url, label, opts = {}) => {
   const size = opts.size ?? 512
   const margin = opts.margin ?? 24
   const fontSize = opts.fontSize ?? 28
-  const fontFamily = opts.fontFamily ?? 'Arial'
+  const fontFamily = opts.fontFamily ?? 'Aileron'
   const fontWeight = opts.fontWeight ?? 'bold'
-  const textColor = opts.textColor ?? 'white'
 
   const transformation = [
     { width: size, height: size, crop: 'fill' },
