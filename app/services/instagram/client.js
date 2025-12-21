@@ -1,4 +1,4 @@
-const fetch = (...args) => (globalThis.fetch ? globalThis.fetch(...args) : import('node-fetch').then(({ default: f }) => f(...args)));
+const fetch = globalThis.fetch;
 const { getInstagramConfig } = require('../../db/dbClient');
 const { manageLongLiveToken } = require('./tokenManager');
 

@@ -2,7 +2,6 @@
  * Utility to manage Instagram tokens (exchange short-lived -> long-lived and refresh)
  */
 
-const fetch = require('node-fetch');
 const { updateInstagramToken } = require('../../db/dbClient');
 const { findEnvVariable } = require('../common/env');
 
