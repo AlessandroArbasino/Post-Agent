@@ -99,11 +99,11 @@ const labeledImageUrl = async (url, label, opts = {}) => {
     },
   ]
 
-  const urlTransformed = cloudinary.url(url, {
+  const urlTransformed = new URL(cloudinary.url(url, {
     type: 'fetch',
     secure: false,
     transformation
-  });
+  }));
 
   const uploadResult = await uploadToCloudinary(urlTransformed, { folder: 'annotated', publicId: label });
 
