@@ -99,15 +99,22 @@ const labeledImageUrl = async (url, label, opts = {}) => {
     },
   ]
 
-  const urlTransformed = cloudinary.url(url, {
-    type: 'fetch',
-    secure: false,
-    transformation
+  // Upload the image to Cloudinary with transformations applied eagerly
+  // This creates a real, accessible URL that Telegram can download
+  const result = await cloudinary.uploader.upload(url, {
+    resource_type: 'image',
+    folder: 'annotated',
+    public_id: String(label).replace(/[^a-zA-Z0-9_-]/g, '_'),
+    overwrite: true,
+    eager: transformation,
+    eager_async: false, // Wait for transformation to complete
   });
 
-  const uploadResult = await uploadToCloudinary(urlTransformed, { folder: 'annotated', publicId: label });
+  // Return the first eager transformation URL, or fallback to secure_url
+  const transformedUrl = result.eager?.[0]?.secure_url || result.secure_url;
+  console.log('✅ Cloudinary labeled image created:', transformedUrl);
 
-  return uploadResult.publicUrl;
+  return transformedUrl;
 }
 
 module.exports = {
