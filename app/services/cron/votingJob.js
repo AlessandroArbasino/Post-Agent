@@ -27,7 +27,7 @@ const votingCron = async (images, topicId) => {
     });
 
     return [{
-      text: `Vota #${votingNumber}`,
+      text: `Vote image ${votingNumber}`,
       callback_data: `vote:${shortHash(u.image_url)}`,
     }];
   }));
